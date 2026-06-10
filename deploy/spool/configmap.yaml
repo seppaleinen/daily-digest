@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spool-config
+  namespace: default
+data:
+  WHISPER_URL: "http://whisper-service.default.svc.cluster.local"
+  SUMMARIZER_URL: "http://summarizer-service.default.svc.cluster.local"
+  DIGEST_API_URL: "http://digest-api.default.svc.cluster.local"

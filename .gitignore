@@ -1,3 +1,12 @@
 node_modules
 dist
 .env*
+*.db
+*.db-shm
+*.db-wal
+data/
+apps/api/data/
+apps/api/*.db
+apps/api/*.db-shm
+apps/api/*.db-wal
+

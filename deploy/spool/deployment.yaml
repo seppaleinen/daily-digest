@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spool
+  namespace: default
+  labels:
+    app: spool
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spool
+  template:
+    metadata:
+      labels:
+        app: spool
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+      containers:
+        - name: spool
+          image: daily-digest-spool:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: SPOOL_CONFIG_PATH
+              value: /config/spool-config.yaml
+            - name: WHISPER_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: spool-config
+                  key: WHISPER_URL
+            - name: SUMMARIZER_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: spool-config
+                  key: SUMMARIZER_URL
+            - name: DIGEST_API_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: spool-config
+                  key: DIGEST_API_URL
+            - name: YOUTUBE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: spool-secrets
+                  key: YOUTUBE_API_KEY
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config
+              readOnly: true
+            - name: spool-tmp
+              mountPath: /tmp/spool
+      volumes:
+        - name: config-volume
+          configMap:
+            name: spool-config
+        - name: spool-tmp
+          emptyDir:
+            medium: Memory
