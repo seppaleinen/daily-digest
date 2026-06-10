@@ -7,7 +7,7 @@ let dbInstance: ReturnType<typeof drizzle> | null = null;
 
 export function getDb(): ReturnType<typeof drizzle> {
   if (!dbInstance) {
-    const sqlite = new Database(process.env.DATABASE_URL || ":memory:");
+    const sqlite = new Database(process.env.DATABASE_URL || "daily-digest.db");
     sqlite.pragma("journal_mode=WAL");
     sqlite.pragma("foreign_keys=ON");
     dbInstance = drizzle(sqlite, { schema: { digestItems } });

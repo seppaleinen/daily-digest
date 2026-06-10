@@ -6,7 +6,15 @@
   "scripts": {
     "build": "turbo build",
     "dev": "turbo dev",
-    "test": "pnpm --filter @daily-digest/api test"
+    "test": "pnpm --filter @daily-digest/api test",
+    "api:dev": "pnpm --filter @daily-digest/api dev",
+    "api:db:push": "pnpm --filter @daily-digest/api db:push",
+    "api:test": "pnpm --filter @daily-digest/api test",
+    "api:test:unit": "pnpm --filter @daily-digest/api test:unit",
+    "api:test:integ": "pnpm --filter @daily-digest/api test:integ",
+    "reader:dev": "pnpm --filter reader dev",
+    "reader:build": "pnpm --filter reader build",
+    "reader:preview": "pnpm --filter reader preview"
   },
   "engines": {
     "node": ">=20"
