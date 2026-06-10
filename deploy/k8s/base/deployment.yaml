@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: daily-digest
+  namespace: daily-digest
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: daily-digest
+  template:
+    metadata:
+      labels:
+        app: daily-digest
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      initContainers:
+        - name: migrate
+          image: your-registry/daily-digest-api:latest
+          command: ["npx", "drizzle-kit", "push"]
+          envFrom:
+            - configMapRef:
+                name: daily-digest-config
+          volumeMounts:
+            - name: sqlite-data
+              mountPath: /data
+      containers:
+        - name: api
+          image: your-registry/daily-digest-api:latest
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: daily-digest-config
+          volumeMounts:
+            - name: sqlite-data
+              mountPath: /data

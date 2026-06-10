@@ -1,0 +1,4 @@
+
+> @daily-digest/shared@0.0.1 build /Users/daveri/workspace/personal/daily-digest/packages/shared
+> tsc --project tsconfig.json
+

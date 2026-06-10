@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: daily-digest-config
+  namespace: daily-digest
+data:
+  DATABASE_URL: "file:/data/daily-digest.db"

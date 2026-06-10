@@ -1,0 +1,17 @@
+{
+  "name": "daily-digest",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@9.15.4",
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "test": "pnpm --filter @daily-digest/api test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "turbo": "^2.4.0"
+  }
+}
