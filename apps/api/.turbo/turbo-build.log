@@ -2,6 +2,3 @@
 > @daily-digest/api@0.0.1 build /Users/daveri/workspace/personal/daily-digest/apps/api
 > tsc --project tsconfig.json
 
-src/routes/digest.integration.test.ts(14,15): error TS1127: Invalid character.
-src/routes/digest.integration.test.ts(262,1): error TS1160: Unterminated template literal.
- ELIFECYCLE  Command failed with exit code 2.

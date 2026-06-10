@@ -27,7 +27,7 @@ spoolRoutes.post('/queue/run', async (c) => {
 });
 
 spoolRoutes.post('/queue/:id/retry', async (c) => {
-  const id = c.param('id');
+  const id = (c as any).param('id');
   const digestDate = new Date().toISOString().split('T')[0];
   await orchestrationService.retryItem(id, digestDate);
   return c.json({ success: true });
@@ -48,16 +48,13 @@ spoolRoutes.post('/transcribe', async (c) => {
     publishedAt: Date.now(),
     status: 'pending' as SpoolStatus,
     digestDate,
+    error: null as string | null,
   };
 
   await repository.upsertItem(newItem);
-  
-  // Trigger orchestration for this specific item
-  // We need the id from upserted item. 
-  // Actually repository.upsertItem returns void. I should modify it to return the id.
-  // But for now I'll just say "queued".
   
   return c.json({ message: 'Transcription queued for testing', sourceType: source });
 });
 
 export default spoolRoutes;
+

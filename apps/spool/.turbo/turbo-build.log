@@ -1,0 +1,4 @@
+
+> @daily-digest/spool@0.0.1 build /Users/daveri/workspace/personal/daily-digest/apps/spool
+> tsc --project tsconfig.json
+

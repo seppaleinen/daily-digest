@@ -1,20 +1,22 @@
-import { describe, it, expect, beforeEach, afterAll } from "vitest";
+import { describe, it, expect, beforeEach, afterAll, beforeAll } from "vitest";
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 const { drizzle: createDrizzleDb } = await import("drizzle-orm/better-sqlite3");
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 const Database = (await import("better-sqlite3")).default;
-
 import * as schema from "../apps/api/src/db/schema";
+import fs from "node:fs";
+import path from "node:path";
+
+const TEST_DB_PATH = path.join(process.cwd(), "test_e2e.db");
 
 function createDb() {
-  const sqlite = new Database(":memory:");
+  const sqlite = new Database(TEST_DB_PATH);
   sqlite.pragma("journal_mode=WAL");
   sqlite.pragma("foreign_keys=ON");
   return { db: createDrizzleDb(sqlite, { schema }) as ReturnType<typeof createDrizzleDb<typeof schema>>, sqlite };
 }
 
 async function createApp(db: ReturnType<typeof createDrizzleDb<typeof schema>>) {
-  // eslint-disable-next-line @typescript-eslint/no-restricted-imports
   const { Hono } = await import("hono");
   const { createDigestHandler } = await import("../apps/api/src/routes/digest");
 
@@ -33,6 +35,12 @@ describe("full flow — e2e", () => {
   let app: Awaited<ReturnType<typeof createApp>>;
   let sqlite: Database;
 
+  beforeAll(() => {
+    if (fs.existsSync(TEST_DB_PATH)) {
+      fs.unlinkSync(TEST_DB_PATH);
+    }
+  });
+
   beforeEach(async () => {
     const result = createDb();
     db = result.db;
@@ -42,6 +50,9 @@ describe("full flow — e2e", () => {
 
   afterAll(() => {
     sqlite.close();
+    if (fs.existsSync(TEST_DB_PATH)) {
+      fs.unlinkSync(TEST_DB_PATH);
+    }
   });
 
   it("creates item, reads date list, reads items by date — full flow", async () => {
@@ -126,5 +137,34 @@ describe("full flow — e2e", () => {
     const todayItems = (await app.request("/2026-06-09")).json() as Promise<any[]>;
     expect((await todayItems).length).toBe(1);
     expect((await todayItems)[0].title).toBe("Today's Podcast");
+  });
+
+  it("persists data across application restarts", async () => {
+    const testDate = "2026-06-10";
+    const testTitle = "Persistence Test";
+
+    // Step 1: Create item
+    const createRes = await app.request("/items", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ date: testDate, source: "email", title: testTitle, html: "<p>Test</p>" }),
+    });
+    expect(createRes.status).toBe(201);
+
+    // Step 2: Close connection
+    sqlite.close();
+
+    // Step 3: Re-connect
+    const result = createDb();
+    db = result.db;
+    sqlite = result.sqlite;
+    app = await createApp(db);
+
+    // Step 4: Verify data
+    const itemsRes = await app.request(`/${testDate}`);
+    expect(itemsRes.status).toBe(200);
+    const items = (await itemsRes.json()) as any[];
+    expect(items.length).toBe(1);
+    expect(items[0].title).toBe(testTitle);
   });
 });

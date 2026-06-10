@@ -1,7 +1,6 @@
 import { SpoolRepository } from "../db/repository";
 import { AppConfig } from "../config";
 import { SpoolSourceType } from "../db/schema";
-import { randomUUID } from "node:crypto";
 
 export class DiscoveryService {
   private repository = new SpoolRepository();
@@ -100,6 +99,7 @@ export class DiscoveryService {
           publishedAt: item.publishedAt,
           status: "pending",
           digestDate,
+          error: null,
         });
       }
     }

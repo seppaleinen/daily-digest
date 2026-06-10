@@ -65,36 +65,3 @@ export class SpoolRepository {
   }
 }
 
-
-  async updateStatus(id: string, status: SpoolStatus, error?: string) {
-    await this.db.update(spoolItems)
-      .set({
-        status,
-        error,
-        updatedAt: Date.now(),
-      })
-      .where(eq(spoolItems.id, id));
-  }
-
-  async getItemsByStatus(status: SpoolStatus) {
-    return await this.db.select().from(spoolItems).where(eq(spoolItems.status, status));
-  }
-
-  async getAllItems() {
-    return await this.db.select().from(spoolItems);
-  }
-
-  async getItemById(id: string) {
-    const result = await this.db.select().from(spoolItems).where(eq(spoolItems.id, id));
-    return result[0] || null;
-  }
-
-  async getBySourceUrl(url: string) {
-    const result = await this.db.select().from(spoolItems).where(eq(spoolItems.sourceUrl, url));
-    return result[0] || null;
-  }
-
-  async getFailedItems() {
-    return await this.db.select().from(spoolItems).where(eq(spoolItems.status, "failed"));
-  }
-}
