@@ -1,4 +1,0 @@
-
-> @daily-digest/api@0.0.1 build /Users/daveri/workspace/personal/daily-digest/apps/api
-> tsc --project tsconfig.json
-
