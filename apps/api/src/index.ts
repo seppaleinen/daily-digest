@@ -15,10 +15,14 @@ app.use("*", async (c: Context, next: () => Promise<void>) => {
   await next();
 });
 
-// Mount routes under /digest prefix
+// Mount routes
 app.post("/items", handler.upsertItem);
 app.get("/", handler.listDates);
 app.get("/:date", handler.getItemsByDate);
+
+app.all("*", async (c) => {
+  return c.text("Not Found", 404);
+});
 
 const port = parseInt(process.env.PORT || "3000", 10);
 serve({ fetch: app.fetch, port }, (info) => {

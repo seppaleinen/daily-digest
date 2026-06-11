@@ -8,6 +8,13 @@
       "when": 1781093801223,
       "tag": "0000_nice_ezekiel",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1781186691348,
+      "tag": "0001_add_category_to_digest_items",
+      "breakpoints": true
     }
   ]
 }
