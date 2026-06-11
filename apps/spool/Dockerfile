@@ -20,7 +20,7 @@ RUN npm install -g pnpm && pnpm install --frozen-lockfile
 COPY --chown=spooluser:spooluser src ./src
 
 # Expose port
-EXPOSE 3000
+EXPOSE 3001
 
 # Start the service
 CMD ["pnpm", "dev"]

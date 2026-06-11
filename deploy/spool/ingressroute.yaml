@@ -11,6 +11,6 @@ spec:
       kind: Rule
       services:
         - name: spool
-          port: 3000
+          port: 3001
   middlewares:
     - name: authentik-auth
