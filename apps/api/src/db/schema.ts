@@ -5,6 +5,7 @@ import { SOURCE } from "@daily-digest/shared";
 export const digestItems = sqliteTable("digest_items", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   date: text("date").notNull(), // YYYY-MM-DD format
+  category: text("category").notNull().default("general"),
   source: text("source").notNull().$type<"email" | "podcast" | "youtube">(),
   title: text("title").notNull(),
   html: text("html").notNull(),

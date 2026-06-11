@@ -31,23 +31,27 @@ export function createDigestHandler(db: ReturnType<typeof createDrizzleDb>) {
 
       const item = parsed.data;
 
-      // Check for existing row with same date+title+html
+      // Check for existing row with same date+category+title+html
       const existing = await db
         .select()
         .from(digestItems)
         .where(
-          and(eq(digestItems.date, item.date), eq(digestItems.title, item.title), eq(digestItems.html, item.html))
+          and(
+            eq(digestItems.date, item.date),
+            eq(digestItems.category, item.category),
+            eq(digestItems.title, item.title),
+            eq(digestItems.html, item.html)
+          )
         );
 
-       if (existing.length > 0) {
-         // Update only the source (in case it was miscategorized)
-         const updated = await db.update(digestItems).set({ source: item.source }).where(eq(digestItems.id, existing[0].id)).returning();
-         return c.json(updated[0], 201);
-       }
+      if (existing.length > 0) {
+        // Update only the source (in case it was miscategorized)
+        const updated = await db.update(digestItems).set({ source: item.source }).where(eq(digestItems.id, existing[0].id)).returning();
+        return c.json(updated[0], 201);
+      }
 
-
-       const inserted = await db.insert(digestItems).values(item).returning();
-       return c.json(inserted[0], 201);
+      const inserted = await db.insert(digestItems).values(item).returning();
+      return c.json(inserted[0], 201);
     },
 
     listDates: async (c: Context) => {
@@ -57,8 +61,8 @@ export function createDigestHandler(db: ReturnType<typeof createDrizzleDb>) {
     },
 
     getItemsByDate: async (c: Context) => {
-      console.log("Entering getItemsByDate");
       const date = c.req.param("date");
+      const category = c.req.query("category");
       if (!date) return c.json([], 400);
 
       const validation = DateSchema.safeParse(date);
@@ -66,7 +70,17 @@ export function createDigestHandler(db: ReturnType<typeof createDrizzleDb>) {
         return c.json({ error: "Invalid date format. Expected YYYY-MM-DD", details: validation.error.format() }, 400);
       }
 
-      const rows = await db.select().from(digestItems).where(eq(digestItems.date, date)).orderBy(digestItems.createdAt);
+      const filters = [eq(digestItems.date, date)];
+      if (category) {
+        filters.push(eq(digestItems.category, category));
+      }
+
+      const rows = await db
+        .select()
+        .from(digestItems)
+        .where(and(...filters))
+        .orderBy(digestItems.createdAt);
+        
       return c.json(rows);
     },
 

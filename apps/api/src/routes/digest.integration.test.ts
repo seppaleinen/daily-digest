@@ -229,22 +229,44 @@ describe("digest routes — integration", () => {
     expect(dates).toEqual(["2026-06-08", "2026-06-09"]);
   });
 
-  it("GET /:date — returns items for a date", async () => {
+  it("supports multiple digests per date with different categories", async () => {
+    // Item 1: tech category
     await app.request("/items", {
       method: "POST",
       headers: { "Content-type": "application/json" },
-      body: JSON.stringify({ date: "2026-06-09", source: "email", title: "First", html: "<p>A</p>" }),
+      body: JSON.stringify({ 
+        date: "2026-06-10", 
+        source: "email", 
+        category: "tech",
+        title: "Tech News", 
+        html: "<p>Tech stuff</p>" 
+      }),
     });
+
+    // Item 2: meetings category
     await app.request("/items", {
       method: "POST",
       headers: { "Content-type": "application/json" },
-      body: JSON.stringify({ date: "2026-06-09", source: "podcast", title: "Second", html: "<p>B</p>" }),
+      body: JSON.stringify({ 
+        date: "2026-06-10", 
+        source: "email", 
+        category: "meetings",
+        title: "Meeting Notes", 
+        html: "<p>Meeting stuff</p>" 
+      }),
     });
-    const res = await app.request("/2026-06-09");
+
+    const res = await app.request("/2026-06-10?category=tech");
     expect(res.status).toBe(200);
     const items = (await res.json()) as any[];
-    expect(items.length).toBe(2);
-    expect(items[0].title).toBe("First");
+    expect(items.length).toBe(1);
+    expect(items[0].category).toBe("tech");
+    expect(items[0].title).toBe("Tech News");
+
+    const resAll = await app.request("/2026-06-10");
+    expect(resAll.status).toBe(200);
+    const itemsAll = (await resAll.json()) as any[];
+    expect(itemsAll.length).toBe(2);
   });
 
   it("GET /:date — returns 400 for malformed date strings", async () => {

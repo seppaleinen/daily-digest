@@ -5,6 +5,6 @@ module.exports = defineConfig({
   schema: "./src/db/schema.ts",
   dialect: "sqlite",
   dbCredentials: {
-    url: "test_e2e.db",
+    url: "daily-digest.db",
   },
 });
