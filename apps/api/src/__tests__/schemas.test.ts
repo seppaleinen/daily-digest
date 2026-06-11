@@ -50,6 +50,22 @@ describe("CreateItemSchema — unit", () => {
     const result = CreateItemSchema.safeParse({ date: "2026-06-09", source: SOURCE[0], title: "a".repeat(501), html: "<p>Body</p>" });
     expect(result.success).toBe(false);
   });
+
+  it("rejects invalid date formats", () => {
+    const invalidDates = ["2026/06/09", "09-06-2026", "2026-6-9", "not-a-date"];
+    invalidDates.forEach(date => {
+      const result = CreateItemSchema.safeParse({ date, source: SOURCE[0], title: "Subject", html: "<p>Body</p>" });
+      expect(result.success).toBe(false);
+    });
+  });
+
+  it("validates title length boundaries", () => {
+    const minRes = CreateItemSchema.safeParse({ date: "2026-06-09", source: SOURCE[0], title: "a", html: "<p>Body</p>" });
+    expect(minRes.success).toBe(true);
+
+    const maxRes = CreateItemSchema.safeParse({ date: "2026-06-09", source: SOURCE[0], title: "a".repeat(500), html: "<p>Body</p>" });
+    expect(maxRes.success).toBe(true);
+  });
 });
 
 describe("Source enum — unit", () => {

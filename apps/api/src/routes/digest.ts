@@ -3,13 +3,25 @@ import { type Context, Hono } from "hono";
 const { drizzle: createDrizzleDb } = await import("drizzle-orm/better-sqlite3");
 import { digestItems } from "../db/schema";
 
-import { CreateItemSchema, type Source } from "@daily-digest/shared";
+import { CreateItemSchema, DateSchema, type Source } from "@daily-digest/shared";
 import { eq, and } from "drizzle-orm";
 
+// Debugging: check if schemas are imported correctly
+// @ts-ignore
+console.log("CreateItemSchema:", CreateItemSchema ? "defined" : "undefined");
+// @ts-ignore
+console.log("DateSchema:", DateSchema ? "defined" : "undefined");
+
 export function createDigestHandler(db: ReturnType<typeof createDrizzleDb>) {
+
   return {
     upsertItem: async (c: Context) => {
-      const body = await c.req.json();
+      let body;
+      try {
+        body = await c.req.json();
+      } catch (e) {
+        return c.json({ error: "Invalid JSON", details: { message: "Malformed JSON payload" } }, 400);
+      }
 
       // Validate input — cast source to Source since it's not typed yet from JSON
       const parsed = CreateItemSchema.safeParse({ ...body, source: body.source as Source });
@@ -34,22 +46,30 @@ export function createDigestHandler(db: ReturnType<typeof createDrizzleDb>) {
        }
 
 
-      const inserted = await db.insert(digestItems).values(item).returning();
-      return c.json(inserted[0], 201);
+       const inserted = await db.insert(digestItems).values(item).returning();
+       return c.json(inserted[0], 201);
     },
 
     listDates: async (c: Context) => {
-      const rows = await db.select({ date: digestItems.date }).from(digestItems).orderBy(digestItems.date);
+      const rows = await db.select({ date: digestItems.date }).from(digestItems).groupBy(digestItems.date).orderBy(digestItems.date);
       // Return raw array of strings as requested
       return c.json(rows.map((r) => r.date));
     },
 
     getItemsByDate: async (c: Context) => {
+      console.log("Entering getItemsByDate");
       const date = c.req.param("date");
       if (!date) return c.json([], 400);
+
+      const validation = DateSchema.safeParse(date);
+      if (!validation.success) {
+        return c.json({ error: "Invalid date format. Expected YYYY-MM-DD", details: validation.error.format() }, 400);
+      }
+
       const rows = await db.select().from(digestItems).where(eq(digestItems.date, date)).orderBy(digestItems.createdAt);
       return c.json(rows);
     },
+
   };
 }
 
