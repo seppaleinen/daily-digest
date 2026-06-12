@@ -33,23 +33,30 @@ export class OrchestrationService {
     const audioPath = path.join(this.tempDir, `${item.id}.mp3`);
     
     try {
+      console.log(`[Orchestration] Starting process for item: ${item.id} (${item.title})`);
+      
       await this.repository.updateStatus(item.id, "transcribing");
+      console.log(`[Orchestration] Step 1/3: Extracting audio...`);
       await this.mediaExtraction.extractAudio(item.sourceUrl, audioPath);
 
+      console.log(`[Orchestration] Step 2/3: Transcribing...`);
       await this.repository.updateStatus(item.id, "summarizing");
       const transcript = await this.transcription.transcribe(audioPath);
 
+      console.log(`[Orchestration] Step 3/3: Summarizing...`);
       const summary = await this.summarization.summarize(transcript);
 
+      console.log(`[Orchestration] Pushing to Digest API...`);
       await this.digestApi.pushDigestItem(digestDate, {
         source: item.sourceType,
         title: item.title,
         html: summary,
       });
 
+      console.log(`[Orchestration] Successfully completed item: ${item.id}`);
       await this.repository.updateStatus(item.id, "done");
     } catch (error) {
-      console.error(`Error processing item ${item.id}: ${error}`);
+      console.error(`[Orchestration] Error processing item ${item.id}: ${error}`);
       await this.repository.updateStatus(item.id, "failed", error instanceof Error ? error.message : String(error));
     } finally {
       if (fs.existsSync(audioPath)) {

@@ -4,6 +4,7 @@ import { config } from '../config';
 export class SummarizationService {
   private readonly baseUrl: string;
   private readonly model: string;
+  private readonly apiKey?: string;
 
   constructor() {
     const inferenceConfig = config.inference;
@@ -12,12 +13,16 @@ export class SummarizationService {
     }
     this.baseUrl = inferenceConfig.provider_url;
     this.model = inferenceConfig.summarization_model;
+    this.apiKey = inferenceConfig.api_key;
   }
 
   async summarize(text: string): Promise<string> {
     const response = await fetch(`${this.baseUrl}/v1/chat/completions`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(this.apiKey ? { Authorization: `Bearer ${this.apiKey}` } : {}),
+      },
       body: JSON.stringify({
         model: this.model,
         messages: [
@@ -39,6 +44,9 @@ export class SummarizationService {
       throw new Error(`Summarization failed: ${errorText}`);
     }
 
+    // OpenAI/omlx transcription response format: { text: "..." } or similar
+    // The specific model (whisper) usually returns { text: "..." } 
+    // We'll allow for a bit of flexibility if needed, but standard is 'text'
     const data = await response.json() as {
       choices: { message: { content: string } }[];
     };

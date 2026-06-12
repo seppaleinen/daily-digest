@@ -6,6 +6,7 @@ import { config } from '../config';
 export class TranscriptionService {
   private readonly baseUrl: string;
   private readonly model: string;
+  private readonly apiKey?: string;
 
   constructor() {
     const inferenceConfig = config.inference;
@@ -14,6 +15,7 @@ export class TranscriptionService {
     }
     this.baseUrl = inferenceConfig.provider_url;
     this.model = inferenceConfig.whisper_model;
+    this.apiKey = inferenceConfig.api_key;
   }
 
   async transcribe(audioPath: string): Promise<string> {
@@ -23,9 +25,16 @@ export class TranscriptionService {
     const fileBuffer = fs.readFileSync(audioPath);
     const blob = new Blob([fileBuffer]);
     formData.append('file', blob, path.basename(audioPath));
+    formData.append('model', this.model);
+
+    const headers: Record<string, string> = {};
+    if (this.apiKey) {
+      headers['Authorization'] = `Bearer ${this.apiKey}`;
+    }
 
     const response = await fetch(`${this.baseUrl}/v1/audio/transcriptions`, {
       method: 'POST',
+      headers,
       body: formData,
     });
 

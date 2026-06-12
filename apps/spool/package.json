@@ -6,7 +6,8 @@
   "scripts": {
     "build": "tsc --project tsconfig.json",
     "dev": "tsx watch src/index.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "db:push": "drizzle-kit push"
   },
   "dependencies": {
     "better-sqlite3": "latest",
@@ -14,7 +15,7 @@
     "drizzle-orm": "latest",
     "hono": "latest",
     "yaml": "latest",
-    "zod": "latest"
+    "zod": "^3.24.0"
   },
   "devDependencies": {
     "@hono/node-server": "latest",
@@ -22,7 +23,7 @@
     "@types/node": "latest",
     "drizzle-kit": "^0.31.10",
     "tsx": "latest",
-    "typescript": "latest",
+    "typescript": "^5.7.0",
     "vitest": "latest"
   }
 }

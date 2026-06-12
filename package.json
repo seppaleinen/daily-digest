@@ -14,7 +14,8 @@
     "api:test:integ": "pnpm --filter @daily-digest/api test:integ",
     "reader:dev": "pnpm --filter reader dev",
     "reader:build": "pnpm --filter reader build",
-    "reader:preview": "pnpm --filter reader preview"
+    "reader:preview": "pnpm --filter reader preview",
+    "db:push": "pnpm --filter \"@daily-digest/*\" db:push"
   },
   "engines": {
     "node": ">=20"

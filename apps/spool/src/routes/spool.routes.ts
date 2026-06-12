@@ -33,28 +33,30 @@ spoolRoutes.post('/queue/:id/retry', async (c) => {
   return c.json({ success: true });
 });
 
-spoolRoutes.post('/transcribe', async (c) => {
-  const { url, sourceType } = await c.req.json();
-  if (!url) return c.json({ error: 'URL is required' }, 400);
+  spoolRoutes.post('/transcribe', async (c) => {
+    const { url, sourceType } = await c.req.json();
+    if (!url) return c.json({ error: 'URL is required' }, 400);
 
-  const digestDate = new Date().toISOString().split('T')[0];
-  const source = (sourceType as SpoolSourceType) || (url.includes('youtube.com') || url.includes('youtu.be') ? 'youtube' : 'podcast');
+    const digestDate = new Date().toISOString().split('T')[0];
+    const source = (sourceType as SpoolSourceType) || (url.includes('youtube.com') || url.includes('youtu.be') ? 'youtube' : 'podcast');
 
-  const newItem = {
-    sourceType: source,
-    sourceUrl: url,
-    channelName: '',
-    title: 'Manual Test Transcribe',
-    publishedAt: Date.now(),
-    status: 'pending' as SpoolStatus,
-    digestDate,
-    error: null as string | null,
-  };
+    const newItem = {
+      sourceType: source,
+      sourceUrl: url,
+      channelName: '',
+      title: 'Manual Test Transcribe',
+      publishedAt: Date.now(),
+      status: 'pending' as SpoolStatus,
+      digestDate,
+      error: null as string | null,
+    };
 
-  await repository.upsertItem(newItem);
-  
-  return c.json({ message: 'Transcription queued for testing', sourceType: source });
-});
+    const id = await repository.upsertItem(newItem);
+    
+    await orchestrationService.processQueue(digestDate);
+    
+    return c.json({ id, message: 'Transcription queued for testing', sourceType: source });
+  });
 
 export default spoolRoutes;
 
