@@ -1,0 +1,23 @@
+{{- if .Values.ingress.enabled -}}
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ include "spool.fullname" . }}-ingress
+  labels:
+    {{- include "spool.labels" . | nindent 4 }}
+spec:
+  {{- if .Values.ingress.entryPoints }}
+  entryPoints:
+    {{- toYaml .Values.ingress.entryPoints | nindent 4 }}
+  {{- end }}
+  routes:
+    - match: Host(`{{ .Values.ingress.host }}`)
+      kind: Rule
+      services:
+        - name: {{ include "spool.fullname" . }}
+          port: {{ .Values.service.port }}
+  {{- if .Values.ingress.middlewares }}
+  middlewares:
+    {{- toYaml .Values.ingress.middlewares | nindent 4 }}
+  {{- end }}
+{{- end }}

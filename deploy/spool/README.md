@@ -2,6 +2,19 @@
 
 This directory contains the Kubernetes manifests for the Spool service.
 
+## Deployment Options
+
+### 1. Manual Manifests (Direct Application)
+Use the raw manifests in this directory for quick testing or debugging.
+```bash
+kubectl apply -f .
+```
+
+### 2. Helm Chart (Production/Automated)
+For production deployments and automated updates, use the Helm chart provided.
+- **Location**: `deploy/helm/spool/`
+- **Automation**: A GitHub Action in `.github/workflows/helm-push.yml` automatically builds the Docker image and pushes the Helm chart to GHCR on pushes to the `main` branch.
+
 ## Deployment Architecture
 
 - **Deployment**: Runs a single replica of the `spool` container.
@@ -21,16 +34,3 @@ The following environment variables are used:
 | `SUMMARIZER_URL` | ConfigMap | URL for the summarization service |
 | `DIGEST_API_URL` | ConfigMap | URL for the Digest API |
 | `YOUTUBE_API_KEY` | Secret | YouTube Data API v3 Key |
-
-## Deployment Steps
-
-1.  **Verify configuration**: Update `deploy/spool/configmap.yaml` with correct service URLs.
-2.  **Encrypt secrets**: Use SOPS to encrypt the `secret.yaml` file.
-3.  **Apply manifests**:
-    ```bash
-    kubectl apply -f deploy/spool/
-    ```
-4.  **Verify deployment**:
-    ```bash
-    kubectl get pods,svc,ingressroute -l app=spool
-    ```

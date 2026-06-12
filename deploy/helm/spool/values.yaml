@@ -1,0 +1,41 @@
+replicaCount: 1
+
+image:
+  repository: daily-digest-spool
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 3001
+
+ingress:
+  enabled: true
+  host: spool.local
+  middlewares:
+    - name: authentik-auth
+
+config:
+  whisperUrl: "http://whisper-service.default.svc.cluster.local"
+  summarizerUrl: "http://summarizer-service.default.svc.cluster.local"
+  digestApiUrl: "http://digest-api.default.svc.cluster.local"
+  spoolConfigPath: "/config/spool-config.yaml"
+
+# For testing purposes, but should be handled via secrets in prod
+secrets:
+  youtubeApiKey: ""
+
+# Security context
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+
+# Volume mounts
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
