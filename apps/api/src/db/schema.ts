@@ -12,4 +12,9 @@ export const digestItems = sqliteTable("digest_items", {
   createdAt: integer("created_at", { mode: "timestamp_ms" }).default(
     sql`CURRENT_TIMESTAMP`
   ).notNull(),
-});
+}, (table) => ({
+  unq_date_category: (table) => {
+    return sql`unique(${table.date}, ${table.category})`;
+  }
+}));
+

@@ -89,27 +89,34 @@ describe("full flow — e2e", () => {
     expect(items.length).toBe(1);
     expect(items[0].title).toBe("Morning Digest");
 
-    const upsertRes = await app.request("/items", {
+    await app.request("/items", {
       method: "POST",
       headers: { "Content-type": "application/json" },
       body: JSON.stringify({ date: "2026-06-09", source: "podcast", title: "Morning Digest", html: "<p>Good morning world</p>" }),
     });
-    expect(upsertRes.status).toBe(201);
-    const upserted = (await upsertRes.json()) as any;
-    expect(upserted.source).toBe("podcast");
-
     const itemsAfterUpsertRes = await app.request("/2026-06-09");
     const itemsAfterUpsert = (await itemsAfterUpsertRes.json()) as any[];
     expect(itemsAfterUpsert.length).toBe(1);
 
+    // Add a second one with a different category
     await app.request("/items", {
       method: "POST",
       headers: { "Content-type": "application/json" },
-      body: JSON.stringify({ date: "2026-06-09", source: "youtube", title: "Daily News", html: "<p>News summary</p>" }),
+      body: JSON.stringify({ date: "2026-06-09", source: "podcast", title: "Podcast Digest", html: "<p>Podcast summary</p>", category: "podcast" }),
     });
-    const itemsAfterSecondRes = await app.request("/2026-06-09");
-    const itemsAfterSecond = (await itemsAfterSecondRes.json()) as any[];
-    expect(itemsAfterSecond.length).toBe(2);
+    const itemsMultiRes = await app.request("/2026-06-09");
+    const itemsMulti = (await itemsMultiRes.json()) as any[];
+    expect(itemsMulti.length).toBe(2);
+
+    // And verify persistence across application restarts
+    await app.request("/items", {
+      method: "POST",
+      headers: { "Content-type": "application/json" },
+      body: JSON.stringify({ date: "2026-06-09", source: "youtube", title: "New Topic", html: "<p>New topic</p>" }),
+    });
+    const itemsRes_persist = await app.request("/2026-06-09");
+    const items_persist = (await itemsRes_persist.json()) as any[];
+    expect(items_persist.length).toBe(2);
   });
 
   it("handles multiple dates correctly", async () => {
@@ -162,20 +169,29 @@ describe("digest routes — integration", () => {
     expect(body.title).toBe("Test email");
   });
 
-  it("POST /items — upserts same date+title+html with different source", async () => {
+  it("POST /items — replaces existing digest with same date and category", async () => {
+    // 1. Create original digest
     await app.request("/items", {
       method: "POST",
       headers: { "Content-type": "application/json" },
-      body: JSON.stringify({ date: "2026-06-09", source: "email", title: "Test email", html: "<p>Hello</p>" }),
+      body: JSON.stringify({ date: "2026-06-10", source: "email", title: "Original Title", html: "<p>Original</p>" }),
     });
+
+    // 2. Upsert with same date and category but different title/html
     const res = await app.request("/items", {
       method: "POST",
       headers: { "Content-type": "application/json" },
-      body: JSON.stringify({ date: "2026-06-09", source: "podcast", title: "Test email", html: "<p>Hello</p>" }),
+      body: JSON.stringify({ date: "2026-06-10", source: "podcast", title: "New Title", html: "<p>New</p>" }),
     });
     expect(res.status).toBe(201);
-    const body = (await res.json()) as any;
-    expect(body.source).toBe("podcast");
+
+    // 3. Verify replacement
+    const itemsRes = await app.request("/2026-06-10");
+    const items = (await itemsRes.json()) as any[];
+    expect(items.length).toBe(1);
+    expect(items[0].title).toBe("New Title");
+    expect(items[0].html).toBe("<p>New</p>");
+    expect(items[0].source).toBe("podcast");
   });
 
   it("POST /items — validates input", async () => {
@@ -278,8 +294,6 @@ describe("digest routes — integration", () => {
       expect(body).toHaveProperty("error");
     }
   });
-
-
 
   it("CSP header is set", async () => {
     const res = await app.request("/");
