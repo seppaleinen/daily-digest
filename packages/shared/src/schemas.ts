@@ -1,9 +1,8 @@
 import { z } from "zod";
 
+export const DateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 export const SOURCE = ["email", "podcast", "youtube"] as const;
 export type Source = (typeof SOURCE)[number];
-
-export const DateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
 export const CreateItemSchema = z.object({
   date: DateSchema,

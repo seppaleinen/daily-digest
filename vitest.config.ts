@@ -1,17 +1,31 @@
 import { defineConfig } from "vitest/config";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import tsconfigPaths from "vite-tsconfig-paths";
 
-// Map bare "sqlite" import (used by drizzle-orm/sqlite/nodejs) to node:sqlite
-const sqliteAliasPlugin = {
-  name: "sqlite-alias",
-  resolveId(id: string): string | void {
-    if (id === "sqlite") return "node:sqLite";
-  },
-};
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
-  plugins: [sqliteAliasPlugin],
+  plugins: [tsconfigPaths()],
   test: {
     globals: true,
     environment: "node",
+    server: {
+      deps: {
+        inline: ["@daily-digest/shared"],
+      },
+    },
+  },
+  resolve: {
+    alias: {
+      "@daily-digest/shared": path.resolve(__dirname, "packages/shared/src/index.ts"),
+    },
   },
 });
+
+
+
+
+
+
+

@@ -1,15 +1,19 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { TranscriptionResponse } from '../types';
+import { config } from '../config';
 
 export class TranscriptionService {
-  private readonly whisperUrl: string;
+  private readonly baseUrl: string;
+  private readonly model: string;
 
   constructor() {
-    this.whisperUrl = process.env.WHISPER_URL || '';
-    if (!this.whisperUrl) {
-      throw new Error('WHISPER_URL is not defined');
+    const inferenceConfig = config.inference;
+    if (!inferenceConfig) {
+      throw new Error('Inference configuration is missing in spool config');
     }
+    this.baseUrl = inferenceConfig.provider_url;
+    this.model = inferenceConfig.whisper_model;
   }
 
   async transcribe(audioPath: string): Promise<string> {
@@ -20,7 +24,7 @@ export class TranscriptionService {
     const blob = new Blob([fileBuffer]);
     formData.append('file', blob, path.basename(audioPath));
 
-    const response = await fetch(this.whisperUrl, {
+    const response = await fetch(`${this.baseUrl}/v1/audio/transcriptions`, {
       method: 'POST',
       body: formData,
     });
@@ -30,7 +34,10 @@ export class TranscriptionService {
       throw new Error(`Transcription failed: ${errorText}`);
     }
 
-    const data = await response.json() as TranscriptionResponse;
-    return data.transcript;
+    // OpenAI/omlx transcription response format: { text: "..." } or similar
+    // The specific model (whisper) usually returns { text: "..." } 
+    // We'll allow for a bit of flexibility if needed, but standard is 'text'
+    const data = await response.json() as { text: string };
+    return data.text;
   }
 }

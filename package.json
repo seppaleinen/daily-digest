@@ -20,6 +20,8 @@
     "node": ">=20"
   },
   "devDependencies": {
-    "turbo": "^2.4.0"
+    "turbo": "^2.4.0",
+    "vite-tsconfig-paths": "^6.1.1",
+    "vitest": "^4.1.8"
   }
 }
