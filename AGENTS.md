@@ -66,7 +66,7 @@ daily-digest/
 ### E2E Tests — Main and Critical Flows
 - **When:** User-facing flows that must work together (create → read → verify)
 - **Framework:** Vitest with `@hono/testing` against a real SQLite file-backed DB
-- **Scope:** Full request lifecycle over HTTP-like interface; tests are in `e2e/` directory at the monorepo root
+- **Scope:** Full request lifecycle over HTTP-like interface; tests live inside each app's `e2e/` directory (e.g., `apps/api/e2e/`) and are executed via the app package's `test:e2e` script
 
 ### Test Execution
 ```bash

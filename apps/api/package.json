@@ -10,6 +10,7 @@
     "test": "vitest run --config vitest.config.ts",
     "test:unit": "vitest run --config vitest.config.ts -t unit",
     "test:integ": "vitest run --config vitest.config.ts -t integ",
+    "test:e2e": "vitest run --config vitest.config.ts",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {

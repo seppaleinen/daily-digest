@@ -1,11 +1,12 @@
-import { describe, it, expect, beforeEach, afterAll, beforeAll } from "vitest";
+import { describe, it, expect, beforeEach, afterAll } from "vitest";
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 const { drizzle: createDrizzleDb } = await import("drizzle-orm/better-sqlite3");
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 const Database = (await import("better-sqlite3")).default;
-import * as schema from "../apps/api/src/db/schema";
+import * as schema from "../src/db/schema";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const TEST_DB_PATH = path.join(process.cwd(), "test_e2e.db");
 
@@ -13,35 +14,51 @@ function createDb() {
   const sqlite = new Database(TEST_DB_PATH);
   sqlite.pragma("journal_mode=WAL");
   sqlite.pragma("foreign_keys=ON");
+
+  // Only apply migration SQL if tables don't already exist (e.g., on reopen)
+  const { cnt: tableCount } = sqlite.prepare(
+    "SELECT count(*) as cnt FROM sqlite_master WHERE type='table'"
+  ).get() as { cnt: number };
+
+  if (tableCount === 0) {
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    const drizzleDir = path.resolve(__dirname, "../drizzle");
+    const sqlFiles = fs.readdirSync(drizzleDir)
+      .filter(f => f.endsWith(".sql"))
+      .sort();
+    for (const file of sqlFiles) {
+      const sql = fs.readFileSync(path.join(drizzleDir, file), "utf-8");
+      sqlite.exec(sql);
+    }
+  }
+
   return { db: createDrizzleDb(sqlite, { schema }) as ReturnType<typeof createDrizzleDb<typeof schema>>, sqlite };
 }
 
 async function createApp(db: ReturnType<typeof createDrizzleDb<typeof schema>>) {
   const { Hono } = await import("hono");
-  const { createDigestHandler } = await import("../apps/api/src/routes/digest");
+  const { createDigestHandler } = await import("../src/routes/digest");
 
   const handler = createDigestHandler(db);
   const app = new Hono();
 
-  app.post("/items", handler.upsertItem);
+  app.post("/:date/items", handler.upsertItem);
   app.get("/", handler.listDates);
   app.get("/:date", handler.getItemsByDate);
 
   return app;
 }
 
-describe("full flow — e2e", () => {
+describe("full flow — e2e (file-backed)", () => {
   let db: ReturnType<typeof createDrizzleDb<typeof schema>>;
   let app: Awaited<ReturnType<typeof createApp>>;
   let sqlite: Database;
 
-  beforeAll(() => {
+  beforeEach(async () => {
+    // Start fresh for each test — cleanup file from previous run
     if (fs.existsSync(TEST_DB_PATH)) {
       fs.unlinkSync(TEST_DB_PATH);
     }
-  });
-
-  beforeEach(async () => {
     const result = createDb();
     db = result.db;
     sqlite = result.sqlite;
@@ -57,10 +74,10 @@ describe("full flow — e2e", () => {
 
   it("creates item, reads date list, reads items by date — full flow", async () => {
     // Step 1: Create an email item for today
-    const createRes = await app.request("/items", {
+    const createRes = await app.request("/2026-06-09/items", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date: "2026-06-09", source: "email", title: "Morning Digest", html: "<p>Good morning world</p>" }),
+      body: JSON.stringify({ source: "email", title: "Morning Digest", html: "<p>Good morning world</p>", sourceUrl: "https://example.com/article" }),
     });
 
     expect(createRes.status).toBe(201);
@@ -81,27 +98,27 @@ describe("full flow — e2e", () => {
     expect(items.length).toBe(1);
     expect(items[0].title).toBe("Morning Digest");
 
-    // Step 4: Upsert — same date+title+html, different source should update
-    const upsertRes = await app.request("/items", {
+    // Step 4: Upsert — same date+category (default "general"), different source should update
+    const upsertRes = await app.request("/2026-06-09/items", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date: "2026-06-09", source: "podcast", title: "Morning Digest", html: "<p>Good morning world</p>" }),
+      body: JSON.stringify({ source: "podcast", title: "Morning Digest", html: "<p>Good morning world</p>", sourceUrl: "https://example.com/article2" }),
     });
 
     expect(upsertRes.status).toBe(201);
     const upserted = (await upsertRes.json()) as any;
     expect(upserted.source).toBe("podcast"); // source updated
 
-    // Step 5: Still only one item for that date
+    // Step 5: Still only one item for that date (same date+category = upsert replaced)
     const itemsAfterUpsertRes = await app.request("/2026-06-09");
     const itemsAfterUpsert = (await itemsAfterUpsertRes.json()) as any[];
     expect(itemsAfterUpsert.length).toBe(1);
 
-    // Step 6: Add a different item for the same date
-    await app.request("/items", {
+    // Step 6: Add a different item for the same date with different category
+    await app.request("/2026-06-09/items", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date: "2026-06-09", source: "youtube", title: "Daily News", html: "<p>News summary</p>" }),
+      body: JSON.stringify({ source: "youtube", title: "Daily News", html: "<p>News summary</p>", category: "video", sourceUrl: "https://youtube.com/watch?v=abc" }),
     });
 
     const itemsAfterSecondRes = await app.request("/2026-06-09");
@@ -111,16 +128,16 @@ describe("full flow — e2e", () => {
 
   it("handles multiple dates correctly", async () => {
     // Create items for two different dates
-    await app.request("/items", {
+    await app.request("/2026-06-08/items", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date: "2026-06-08", source: "email", title: "Yesterday's Email", html: "<p>Old</p>" }),
+      body: JSON.stringify({ source: "email", title: "Yesterday's Email", html: "<p>Old</p>", sourceUrl: "https://example.com/article" }),
     });
 
-    await app.request("/items", {
+    await app.request("/2026-06-09/items", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date: "2026-06-09", source: "podcast", title: "Today's Podcast", html: "<p>New</p>" }),
+      body: JSON.stringify({ source: "podcast", title: "Today's Podcast", html: "<p>New</p>", sourceUrl: "https://example.com/article" }),
     });
 
     // Verify dates list returns both, sorted ascending
@@ -144,10 +161,10 @@ describe("full flow — e2e", () => {
     const testTitle = "Persistence Test";
 
     // Step 1: Create item
-    const createRes = await app.request("/items", {
+    const createRes = await app.request(`/${testDate}/items`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date: testDate, source: "email", title: testTitle, html: "<p>Test</p>" }),
+      body: JSON.stringify({ source: "email", title: testTitle, html: "<p>Test</p>", sourceUrl: "https://example.com/article" }),
     });
     expect(createRes.status).toBe(201);
 
