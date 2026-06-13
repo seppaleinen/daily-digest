@@ -10,7 +10,6 @@ import { fileURLToPath } from "node:url";
 
 async function createDb() {
   const sqlite = new Database(":memory:");
-  sqlite.pragma("journal_mode=WAL");
   sqlite.pragma("foreign_keys=ON");
   
   // Apply migrations from the drizzle directory
@@ -203,7 +202,7 @@ describe("digest routes — integration", () => {
     const res = await app.request("/2026-06-09/items", {
       method: "POST",
       headers: { "Content-type": "application/json" },
-      body: JSON.stringify({ source: "invalid" as any, title: "", html: "", sourceUrl: "https://example.com/article" }),
+      body: JSON.stringify({ source: "invalid", title: "", html: "", sourceUrl: "https://example.com/article" }),
     });
     expect(res.status).toBe(400);
     const body = await res.json();

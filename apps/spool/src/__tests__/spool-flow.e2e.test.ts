@@ -4,6 +4,7 @@ import { Hono } from "hono";
 import { serve, type ServerType } from "@hono/node-server";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { eq } from "drizzle-orm";
+import type { SpoolSourceType, SpoolStatus } from "../db/schema";
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
@@ -88,12 +89,12 @@ async function insertSpoolItem(item: {
   // We'll use the repository's upsertItem which takes NewSpoolItem type
   // But we need to match the type: Omit<SpoolItem, "id" | "createdAt" | "updatedAt">
   const newItem = {
-    sourceType: item.sourceType as any,
+    sourceType: item.sourceType as SpoolSourceType,
     sourceUrl: item.sourceUrl,
     channelName: item.channelName || '',
     title: item.title,
     publishedAt: item.publishedAt,
-    status: item.status as any,
+    status: item.status as SpoolStatus,
     digestDate: item.digestDate,
     error: null,
   };

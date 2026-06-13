@@ -78,6 +78,43 @@ describe("CreateItemSchema — unit", () => {
     const result = CreateItemSchema.safeParse({ date: "2026-06-09", source: SOURCE[0], title: "Subject", html: "<p>Body</p>", sourceUrl: "/relative/path" });
     expect(result.success).toBe(true);
   });
+
+  // ── Edge cases ─────────────────────────────────────────
+  it("defaults category to 'general' when omitted", () => {
+    const result = CreateItemSchema.safeParse({ date: "2026-06-09", source: SOURCE[0], title: "Subject", html: "<p>Body</p>", sourceUrl: "https://example.com/article" });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.category).toBe("general");
+    }
+  });
+
+  it("accepts category at min (1 char) and max (50 chars) boundaries", () => {
+    const minRes = CreateItemSchema.safeParse({ date: "2026-06-09", source: SOURCE[0], category: "a", title: "Subject", html: "<p>Body</p>", sourceUrl: "https://example.com/article" });
+    expect(minRes.success).toBe(true);
+
+    const maxRes = CreateItemSchema.safeParse({ date: "2026-06-09", source: SOURCE[0], category: "a".repeat(50), title: "Subject", html: "<p>Body</p>", sourceUrl: "https://example.com/article" });
+    expect(maxRes.success).toBe(true);
+  });
+
+  it("rejects category over 50 chars", () => {
+    const result = CreateItemSchema.safeParse({ date: "2026-06-09", source: SOURCE[0], category: "a".repeat(51), title: "Subject", html: "<p>Body</p>", sourceUrl: "https://example.com/article" });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects empty category (min 1 char)", () => {
+    const result = CreateItemSchema.safeParse({ date: "2026-06-09", source: SOURCE[0], category: "", title: "Subject", html: "<p>Body</p>", sourceUrl: "https://example.com/article" });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts empty sourceUrl string (Zod-level; DB enforces NOT NULL)", () => {
+    const result = CreateItemSchema.safeParse({ date: "2026-06-09", source: SOURCE[0], title: "Subject", html: "<p>Body</p>", sourceUrl: "" });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts very long sourceUrl (2000 chars)", () => {
+    const result = CreateItemSchema.safeParse({ date: "2026-06-09", source: SOURCE[0], title: "Subject", html: "<p>Body</p>", sourceUrl: "https://example.com/" + "a".repeat(1965) });
+    expect(result.success).toBe(true);
+  });
 });
 
 describe("Source enum — unit", () => {
