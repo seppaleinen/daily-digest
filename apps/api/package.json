@@ -9,7 +9,8 @@
     "db:push": "drizzle-kit push",
     "test": "vitest run --config vitest.config.ts",
     "test:unit": "vitest run --config vitest.config.ts -t unit",
-    "test:integ": "vitest run --config vitest.config.ts -t integ"
+    "test:integ": "vitest run --config vitest.config.ts -t integ",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@daily-digest/shared": "workspace:*",

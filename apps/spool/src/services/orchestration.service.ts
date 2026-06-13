@@ -7,15 +7,31 @@ import { TranscriptionService } from "./transcription.service";
 import { SummarizationService } from "./summarization.service";
 import { DigestApiService } from "./digest-api.service";
 
-export class OrchestrationService {
-  private repository = new SpoolRepository();
-  private mediaExtraction = new MediaExtractionService();
-  private transcription = new TranscriptionService();
-  private summarization = new SummarizationService();
-  private digestApi = new DigestApiService();
-  private tempDir = "/tmp/spool";
+export interface OrchestrationOptions {
+  repository?: SpoolRepository;
+  mediaExtraction?: MediaExtractionService;
+  transcription?: TranscriptionService;
+  summarization?: SummarizationService;
+  digestApi?: DigestApiService;
+  tempDir?: string;
+}
 
-  constructor() {
+export class OrchestrationService {
+  private repository: SpoolRepository;
+  private mediaExtraction: MediaExtractionService;
+  private transcription: TranscriptionService;
+  private summarization: SummarizationService;
+  private digestApi: DigestApiService;
+  private tempDir: string;
+
+  constructor(options?: OrchestrationOptions) {
+    this.repository = options?.repository ?? new SpoolRepository();
+    this.mediaExtraction = options?.mediaExtraction ?? new MediaExtractionService();
+    this.transcription = options?.transcription ?? new TranscriptionService();
+    this.summarization = options?.summarization ?? new SummarizationService();
+    this.digestApi = options?.digestApi ?? new DigestApiService();
+    this.tempDir = options?.tempDir ?? "/tmp/spool";
+
     if (!fs.existsSync(this.tempDir)) {
       fs.mkdirSync(this.tempDir, { recursive: true });
     }

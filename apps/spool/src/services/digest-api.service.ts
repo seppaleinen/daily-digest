@@ -10,8 +10,8 @@ export interface DigestPayload {
 export class DigestApiService {
   private readonly digestApiUrl: string;
 
-  constructor() {
-    this.digestApiUrl = process.env.DIGEST_API_URL || '';
+  constructor(baseUrl?: string) {
+    this.digestApiUrl = baseUrl || process.env.DIGEST_API_URL || '';
     if (!this.digestApiUrl) {
       throw new Error('DIGEST_API_URL is not defined');
     }

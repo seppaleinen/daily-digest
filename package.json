@@ -6,7 +6,9 @@
   "scripts": {
     "build": "turbo build",
     "dev": "turbo dev",
-    "test": "pnpm --filter @daily-digest/api test",
+    "test": "turbo test",
+    "test:all": "turbo test type-check",
+    "test:e2e": "turbo test:e2e",
     "api:dev": "pnpm --filter @daily-digest/api dev",
     "api:db:push": "pnpm --filter @daily-digest/api db:push",
     "api:test": "pnpm --filter @daily-digest/api test",
