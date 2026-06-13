@@ -23,7 +23,11 @@ echo "----------------------------------------"
 
 # 1. Trigger Transcription
 echo "📡 Triggering transcription..."
-JSON_BODY=$(jq -n --arg url "$TARGET_URL" --arg title "${TITLE:-}" '{url: $url, title: $title | if . == "" then empty else . end}')
+if [[ -n "$TITLE" ]]; then
+  JSON_BODY=$(jq -n --arg url "$TARGET_URL" --arg title "$TITLE" '{url: $url, title: $title}')
+else
+  JSON_BODY=$(jq -n --arg url "$TARGET_URL" '{url: $url}')
+fi
 RESPONSE=$(curl -s -X POST "$API_BASE_URL/transcribe" \
   -H "Content-Type: application/json" \
   -d "$JSON_BODY")
