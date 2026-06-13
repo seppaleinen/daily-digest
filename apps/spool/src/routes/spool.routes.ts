@@ -33,18 +33,32 @@ spoolRoutes.post('/queue/:id/retry', async (c) => {
   return c.json({ success: true });
 });
 
-  spoolRoutes.post('/transcribe', async (c) => {
-    const { url, sourceType } = await c.req.json();
+spoolRoutes.post('/transcribe', async (c) => {
+    const { url, sourceType, title } = await c.req.json();
     if (!url) return c.json({ error: 'URL is required' }, 400);
 
     const digestDate = new Date().toISOString().split('T')[0];
     const source = (sourceType as SpoolSourceType) || (url.includes('youtube.com') || url.includes('youtu.be') ? 'youtube' : 'podcast');
 
+    // Derive a readable title from the URL if none provided
+    const itemTitle = title || (() => {
+      try {
+        const parsed = new URL(url);
+        if (parsed.hostname.includes('youtube.com') || parsed.hostname.includes('youtu.be')) {
+          const vid = parsed.searchParams.get('v') || parsed.pathname.split('/').pop() || '';
+          return `YouTube — ${vid}`;
+        }
+        return `Link — ${parsed.hostname}`;
+      } catch {
+        return `Link — ${url.slice(0, 60)}`;
+      }
+    })();
+
     const newItem = {
       sourceType: source,
       sourceUrl: url,
       channelName: '',
-      title: 'Manual Test Transcribe',
+      title: itemTitle,
       publishedAt: Date.now(),
       status: 'pending' as SpoolStatus,
       digestDate,

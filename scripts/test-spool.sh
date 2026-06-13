@@ -1,29 +1,32 @@
 #!/bin/bash
 
 # Script to test the Spool transcription service
-# Usage: ./scripts/test-spool.sh <API_URL> <TARGET_URL>
+# Usage: ./scripts/test-spool.sh <API_URL> <TARGET_URL> [TITLE]
 
 set -e
 
 API_BASE_URL="${1%/}"
 TARGET_URL="${2}"
+TITLE="${3}"
 
 if [[ -z "$API_BASE_URL" || -z "$TARGET_URL" ]]; then
-  echo "Usage: $0 <API_BASE_URL> <TARGET_URL>"
-  echo "Example: $0 http://spool.local/spool https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+  echo "Usage: $0 <API_BASE_URL> <TARGET_URL> [TITLE]"
+  echo "Example: $0 http://localhost:3001/spool https://www.youtube.com/watch?v=dQw4w9WgXcQ"
   exit 1
 fi
 
 echo "🚀 Starting transcription test..."
 echo "URL: $TARGET_URL"
 echo "API: $API_BASE_URL"
+[[ -n "$TITLE" ]] && echo "Title: $TITLE"
 echo "----------------------------------------"
 
 # 1. Trigger Transcription
 echo "📡 Triggering transcription..."
+JSON_BODY=$(jq -n --arg url "$TARGET_URL" --arg title "${TITLE:-}" '{url: $url, title: $title | if . == "" then empty else . end}')
 RESPONSE=$(curl -s -X POST "$API_BASE_URL/transcribe" \
   -H "Content-Type: application/json" \
-  -d "{\"url\": \"$TARGET_URL\"}")
+  -d "$JSON_BODY")
 
 ID=$(echo $RESPONSE | jq -r '.id')
 
