@@ -2,22 +2,19 @@ FROM node:22-alpine
 
 RUN apk add --no-cache yt-dlp ffmpeg
 
-# Create a non-root user with UID 1000
-RUN addgroup -g 1000 spooluser && \
-    adduser -u 1000 -G spooluser -D spooluser
-
-USER spooluser
+# Use the existing node user (UID 1000) instead of creating a new one to avoid conflicts
+USER node
 
 WORKDIR /app
 
 # Copy package files
-COPY --chown=spooluser:spooluser package.json pnpm-lock.yaml* ./
+COPY --chown=node:node package.json pnpm-lock.yaml* ./
 
 # Install dependencies
-RUN npm install -g pnpm && pnpm install --frozen-lockfile
+RUN corepack enable && pnpm install --frozen-lockfile
 
 # Copy source code
-COPY --chown=spooluser:spooluser src ./src
+COPY --chown=node:node src ./src
 
 # Expose port
 EXPOSE 3001
