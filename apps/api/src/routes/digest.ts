@@ -1,4 +1,4 @@
-import { Context } from "hono";
+import { Context, Hono } from "hono";
 import { eq, and } from "drizzle-orm";
 import { digestItems } from "../db/schema";
 import { DateSchema, CreateItemSchema } from "@daily-digest/shared";
@@ -14,71 +14,57 @@ export function createDigestHandler(db: any) {
       if (body.__error__) {
         return c.json({ error: "Invalid JSON", details: { message: "Malformed JSON payload" } }, 400);
       }
-
+  
       if (!dateParam) {
         return c.json({ error: "Invalid request", details: { message: "Date parameter is required in URL" } }, 400);
       }
-
+  
       const parsed = CreateItemSchema.safeParse({
         ...body,
         date: dateParam,
       });
-
+  
       if (!parsed.success) {
         return c.json({ error: "Invalid input", details: parsed.error.format() }, 400);
       }
       const item = parsed.data;
 
-       const existing = await db
-         .select()
-         .from(digestItems)
-         .where(
-           and(
-             eq(digestItems.date, item.date),
-             eq(digestItems.category, item.category)
-           )
-         );
- 
-       if (existing.length > 0) {
-         const updated = await db.update(digestItems).set({ 
-           source: item.source,
-           title: item.title,
-           html: item.html
-         }).where(eq(digestItems.id, existing[0].id)).returning();
-         return c.json(updated[0], 201);
-       }
- 
-       const inserted = await db.insert(digestItems).values(item).returning();
-       return c.json(inserted[0], 201);
-     },
-     listDates: async (c: Context) => {
-       const rows = await db.select({ date: digestItems.date }).from(digestItems).groupBy(digestItems.date).orderBy(digestItems.date);
-       return c.json(rows.map((r) => r.date));
-     },
-     getItemsByDate: async (c: Context) => {
-       const date = c.req.param("date");
-       const category = c.req.query("category");
-       if (!date) return c.json([], 400);
- 
-       const validation = DateSchema.safeParse(date);
-       if (!validation.success) {
-         return c.json({ error: "Invalid date format. Expected YYYY-MM-DD", details: validation.error.format() }, 400);
-       }
- 
-       const filters = [eq(digestItems.date, date)];
-       if (category) {
-         filters.push(eq(digestItems.category, category));
-       }
- 
-       const rows = await db
-         .select()
-         .from(digestItems)
-         .where(and(...filters))
-         .orderBy(digestItems.createdAt);
- 
-       return c.json(rows);
-     },
-   };
+      // Normalize source URL: ensure it has a protocol so the reader resolves it correctly
+      if (item.sourceUrl && !item.sourceUrl.startsWith("http://") && !item.sourceUrl.startsWith("https://")) {
+        item.sourceUrl = `https://${item.sourceUrl}`;
+      }
+
+      const inserted = await db.insert(digestItems).values(item).returning();
+      return c.json(inserted[0], 201);
+    },
+    listDates: async (c: Context) => {
+      const rows = await db.select({ date: digestItems.date }).from(digestItems).groupBy(digestItems.date).orderBy(digestItems.date);
+      return c.json(rows.map((r: any) => r.date));
+    },
+    getItemsByDate: async (c: Context) => {
+      const date = c.req.param("date");
+      const category = c.req.query("category");
+      if (!date) return c.json([], 400);
+  
+      const validation = DateSchema.safeParse(date);
+      if (!validation.success) {
+        return c.json({ error: "Invalid date format. Expected YYYY-MM-DD", details: validation.error.format() }, 400);
+      }
+  
+      const filters = [eq(digestItems.date, date)];
+      if (category) {
+        filters.push(eq(digestItems.category, category));
+      }
+  
+      const rows = await db
+        .select()
+        .from(digestItems)
+        .where(and(...filters))
+        .orderBy(digestItems.createdAt);
+  
+      return c.json(rows);
+    },
+  };
 }
 
 export function createCspMiddleware() {

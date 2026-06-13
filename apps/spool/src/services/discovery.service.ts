@@ -64,8 +64,10 @@ export class DiscoveryService {
           const pubDateMatch = pubDateRegex.exec(itemContent);
 
           if (titleMatch && linkMatch && pubDateMatch) {
+            const rawUrl = linkMatch[1].trim();
+            const sourceUrl = new URL(rawUrl, feedUrl).href;
             results.push({
-              sourceUrl: linkMatch[1].trim(),
+              sourceUrl,
               title: titleMatch[1].trim(),
               channelName: "", 
               publishedAt: new Date(pubDateMatch[1].trim()).getTime(),

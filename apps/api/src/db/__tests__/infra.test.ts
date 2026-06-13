@@ -43,6 +43,7 @@ describe("Infrastructure: getDb connectivity", () => {
       source: "email",
       title: "Infra Test",
       html: "Test",
+      sourceUrl: "https://example.com/article",
     });
 
     // Verify file existence and content

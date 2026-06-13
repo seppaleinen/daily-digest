@@ -4,6 +4,7 @@ export interface DigestPayload {
   source: string;
   title: string;
   html: string;
+  sourceUrl: string;
 }
 
 export class DigestApiService {

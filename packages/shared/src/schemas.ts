@@ -10,6 +10,7 @@ export const CreateItemSchema = z.object({
   category: z.string().min(1).max(50).default("general"),
   title: z.string().min(1).max(500),
   html: z.string(),
+  sourceUrl: z.string(),
 });
 
 export type CreateItemInput = z.infer<typeof CreateItemSchema>;

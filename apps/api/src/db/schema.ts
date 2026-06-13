@@ -9,12 +9,10 @@ export const digestItems = sqliteTable("digest_items", {
   source: text("source").notNull().$type<"email" | "podcast" | "youtube">(),
   title: text("title").notNull(),
   html: text("html").notNull(),
+  sourceUrl: text("source_url").notNull(),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).default(
     sql`CURRENT_TIMESTAMP`
   ).notNull(),
-}, (table) => ({
-  unq_date_category: (table) => {
-    return sql`unique(${table.date}, ${table.category})`;
-  }
-}));
+});
+
 

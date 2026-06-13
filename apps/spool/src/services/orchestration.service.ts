@@ -51,10 +51,17 @@ export class OrchestrationService {
       console.log(`[Orchestration] Summary length: ${summary.length} characters`);
 
       console.log(`[Orchestration] Pushing to Digest API...`);
+
+      // Normalize source URL: ensure it has a protocol so the reader resolves it correctly
+      const normalizedUrl = item.sourceUrl?.startsWith("http://") || item.sourceUrl?.startsWith("https://")
+        ? item.sourceUrl
+        : `https://${item.sourceUrl}`;
+
       await this.digestApi.pushDigestItem(digestDate, {
         source: item.sourceType,
         title: item.title,
         html: summary,
+        sourceUrl: normalizedUrl,
       });
 
       console.log(`[Orchestration] Successfully completed item: ${item.id}`);

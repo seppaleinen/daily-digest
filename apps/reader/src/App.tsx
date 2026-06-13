@@ -7,6 +7,7 @@ interface DigestItem {
   title: string;
   html: string;
   source: string;
+  sourceUrl: string;
   createdAt: string;
 }
 
@@ -55,7 +56,7 @@ function App() {
                 <button
                   key={date}
                   onClick={() => fetchItems(date)}
-                  className={`text-left px-4 py-2 rounded-lg transition-all ${
+                  className={`text-left px-4 py_2 rounded-lg transition-all ${
                     selectedDate === date 
                       ? 'bg-blue-600 text-white shadow-md' 
                       : 'hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
@@ -71,22 +72,22 @@ function App() {
             {loading ? (
               <div className="text-center py-12">Loading...</div>
             ) : items.length > 0 ? (
-              <div className="space-y-8">
-                {items.map(item => (
-                  <article 
-                    key={item.id} 
-                    className="p-8 bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:-translate-y-1 transition-transform duration-300"
-                  >
-                    <div className="flex justify-between items-start mb-6">
+              <article className="p-8 bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+                <div className="space-y-12">
+                  {items.map(item => (
+                    <section key={item.id} className="space-y-4">
                       <h3 className="text-2xl font-bold leading-tight">{item.title}</h3>
-                      <span className="text-xs font-bold px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-full text-gray-500 uppercase tracking-widest">
-                        {item.source}
-                      </span>
-                    </div>
-                    <div className="prose dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: item.html }} />
-                  </article>
-                ))}
-              </div>
+                      <div 
+                        className="prose dark:prose-invert max-w-none" 
+                        dangerouslySetInnerHTML={{ __html: item.html }} 
+                      />
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        for more details, <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">click on this link</a>
+                      </p>
+                    </section>
+                  ))}
+                </div>
+              </article>
             ) : (
               <div className="text-center py-24 text-gray-500 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-xl">
                 Select a date to view items
