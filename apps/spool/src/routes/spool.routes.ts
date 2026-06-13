@@ -40,19 +40,25 @@ spoolRoutes.post('/transcribe', async (c) => {
     const digestDate = new Date().toISOString().split('T')[0];
     const source = (sourceType as SpoolSourceType) || (url.includes('youtube.com') || url.includes('youtu.be') ? 'youtube' : 'podcast');
 
-    // Derive a readable title from the URL if none provided
-    const itemTitle = title || (() => {
+    // Resolve title: explicit > oEmbed for YouTube > hostname fallback
+    let itemTitle = title;
+    if (!itemTitle) {
       try {
         const parsed = new URL(url);
         if (parsed.hostname.includes('youtube.com') || parsed.hostname.includes('youtu.be')) {
-          const vid = parsed.searchParams.get('v') || parsed.pathname.split('/').pop() || '';
-          return `YouTube — ${vid}`;
+          const oembed = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`);
+          if (oembed.ok) {
+            const data = await oembed.json() as any;
+            itemTitle = data.title;
+          }
         }
-        return `Link — ${parsed.hostname}`;
+        if (!itemTitle) {
+          itemTitle = `Link — ${parsed.hostname}`;
+        }
       } catch {
-        return `Link — ${url.slice(0, 60)}`;
+        itemTitle = `Link — ${url.slice(0, 60)}`;
       }
-    })();
+    }
 
     const newItem = {
       sourceType: source,

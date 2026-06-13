@@ -16,6 +16,16 @@ function App() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [items, setItems] = useState<DigestItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  const toggleItem = (id: string) => {
+    setExpanded(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const API_BASE = "http://localhost:3000";
 
@@ -74,18 +84,35 @@ function App() {
             ) : items.length > 0 ? (
               <article className="p-8 bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
                 <div className="space-y-12">
-                  {items.map(item => (
-                    <section key={item.id} className="space-y-4">
-                      <h3 className="text-2xl font-bold leading-tight">{item.title}</h3>
-                      <div 
-                        className="prose dark:prose-invert max-w-none" 
-                        dangerouslySetInnerHTML={{ __html: item.html }} 
-                      />
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        for more details, <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">click on this link</a>
-                      </p>
-                    </section>
-                  ))}
+                  {items.map(item => {
+                    const isOpen = expanded.has(item.id);
+                    return (
+                      <section key={item.id} className="space-y-4">
+                        <button
+                          onClick={() => toggleItem(item.id)}
+                          className="w-full text-left flex items-center gap-3 group"
+                        >
+                          <span className={`text-sm font-mono transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`}>
+                            ▶
+                          </span>
+                          <h3 className="text-2xl font-bold leading-tight group-hover:text-blue-600 transition-colors">
+                            {item.title}
+                          </h3>
+                        </button>
+                        {isOpen && (
+                          <div className="pl-7 space-y-4">
+                            <div
+                              className="prose dark:prose-invert max-w-none"
+                              dangerouslySetInnerHTML={{ __html: item.html }}
+                            />
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                              for more details, <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">click on this link</a>
+                            </p>
+                          </div>
+                        )}
+                      </section>
+                    );
+                  })}
                 </div>
               </article>
             ) : (
