@@ -13,7 +13,7 @@ COPY apps/api/src ./apps/api/src
 COPY apps/api/drizzle.config.ts apps/api/
 COPY packages/shared/src ./packages/shared/src
 WORKDIR /app/apps/api
-RUN pnpm install --ignore-scripts && npm rebuild better-sqlite3 && npx tsc --project tsconfig.json
+RUN pnpm install --ignore-scripts && npm rebuild better-sqlite3 && pnpm exec tsc --project tsconfig.json
 
 # --- Runner ---
 FROM node:20-alpine AS runner
@@ -33,12 +33,3 @@ COPY --from=builder /app/apps/api/dist ./dist
 COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 CMD ["node", "dist/index.js"]
 
-
-# --- Migrator ---
-FROM node:20-alpine AS migrator
-RUN apk add --no-cache python3 py-pip g++ make
-WORKDIR /app
-ENV DATABASE_URL=file:/data/daily-digest.db
-COPY --from=builder /app/apps/api/dist ./dist
-COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
-CMD ["node", "dist/index.js"]
