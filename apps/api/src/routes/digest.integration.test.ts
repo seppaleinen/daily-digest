@@ -15,9 +15,14 @@ async function createDb() {
   
   // Apply migrations from the drizzle directory
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
-  const migrationPath = path.resolve(__dirname, "../../drizzle/0000_nice_ezekiel.sql");
-  const sql = fs.readFileSync(migrationPath, "utf-8");
-  sqlite.exec(sql);
+  const drizzleDir = path.resolve(__dirname, "../../drizzle");
+  const sqlFiles = fs.readdirSync(drizzleDir)
+    .filter(f => f.endsWith(".sql"))
+    .sort();
+  for (const file of sqlFiles) {
+    const sql = fs.readFileSync(path.join(drizzleDir, file), "utf-8");
+    sqlite.exec(sql);
+  }
   
   const db = createDrizzleDb(sqlite, { schema: { digestItems: schema.digestItems } });
   return { db: db as ReturnType<typeof createDrizzleDb<typeof schema>>, sqlite };
@@ -44,7 +49,7 @@ async function createApp(db: ReturnType<typeof createDrizzleDb<typeof schema>>) 
     await next();
   });
 
-  app.post("/items", handler.upsertItem);
+  app.post("/:date/items", handler.upsertItem);
   app.get("/", handler.listDates);
   app.get("/:date", handler.getItemsByDate);
 
@@ -68,10 +73,10 @@ describe("full flow — e2e", () => {
   });
 
   it("creates item, reads date list, reads items by date — full flow", async () => {
-    const createRes = await app.request("/items", {
+    const createRes = await app.request("/2026-06-09/items", {
       method: "POST",
       headers: { "Content-type": "application/json" },
-      body: JSON.stringify({ date: "2026-06-09", source: "email", title: "Morning Digest", html: "<p>Good morning world</p>" }),
+      body: JSON.stringify({ source: "email", title: "Morning Digest", html: "<p>Good morning world</p>", sourceUrl: "https://example.com/article" }),
     });
     expect(createRes.status).toBe(201);
     const item = (await createRes.json()) as any;
@@ -89,30 +94,30 @@ describe("full flow — e2e", () => {
     expect(items.length).toBe(1);
     expect(items[0].title).toBe("Morning Digest");
 
-    await app.request("/items", {
+    await app.request("/2026-06-09/items", {
       method: "POST",
       headers: { "Content-type": "application/json" },
-      body: JSON.stringify({ date: "2026-06-09", source: "podcast", title: "Morning Digest", html: "<p>Good morning world</p>" }),
+      body: JSON.stringify({ source: "podcast", title: "Morning Digest", html: "<p>Good morning world</p>", sourceUrl: "https://example.com/article" }),
     });
     const itemsAfterUpsertRes = await app.request("/2026-06-09");
     const itemsAfterUpsert = (await itemsAfterUpsertRes.json()) as any[];
     expect(itemsAfterUpsert.length).toBe(1);
 
     // Add a second one with a different category
-    await app.request("/items", {
+    await app.request("/2026-06-09/items", {
       method: "POST",
       headers: { "Content-type": "application/json" },
-      body: JSON.stringify({ date: "2026-06-09", source: "podcast", title: "Podcast Digest", html: "<p>Podcast summary</p>", category: "podcast" }),
+      body: JSON.stringify({ source: "podcast", title: "Podcast Digest", html: "<p>Podcast summary</p>", category: "podcast", sourceUrl: "https://example.com/article" }),
     });
     const itemsMultiRes = await app.request("/2026-06-09");
     const itemsMulti = (await itemsMultiRes.json()) as any[];
     expect(itemsMulti.length).toBe(2);
 
     // And verify persistence across application restarts
-    await app.request("/items", {
+    await app.request("/2026-06-09/items", {
       method: "POST",
       headers: { "Content-type": "application/json" },
-      body: JSON.stringify({ date: "2026-06-09", source: "youtube", title: "New Topic", html: "<p>New topic</p>" }),
+      body: JSON.stringify({ source: "youtube", title: "New Topic", html: "<p>New topic</p>", sourceUrl: "https://example.com/article" }),
     });
     const itemsRes_persist = await app.request("/2026-06-09");
     const items_persist = (await itemsRes_persist.json()) as any[];
@@ -120,15 +125,15 @@ describe("full flow — e2e", () => {
   });
 
   it("handles multiple dates correctly", async () => {
-    await app.request("/items", {
+    await app.request("/2026-06-08/items", {
       method: "POST",
       headers: { "Content-type": "application/json" },
-      body: JSON.stringify({ date: "2026-06-08", source: "email", title: "Yesterday's Email", html: "<p>Old</p>" }),
+      body: JSON.stringify({ source: "email", title: "Yesterday's Email", html: "<p>Old</p>", sourceUrl: "https://example.com/article" }),
     });
-    await app.request("/items", {
+    await app.request("/2026-06-09/items", {
       method: "POST",
       headers: { "Content-type": "application/json" },
-      body: JSON.stringify({ date: "2026-06-09", source: "podcast", title: "Today's Podcast", html: "<p>New</p>" }),
+      body: JSON.stringify({ source: "podcast", title: "Today's Podcast", html: "<p>New</p>", sourceUrl: "https://example.com/article" }),
     });
     const datesRes = await app.request("/");
     expect(datesRes.status).toBe(200);
@@ -158,10 +163,10 @@ describe("digest routes — integration", () => {
   });
 
   it("POST /items — creates a new item", async () => {
-    const res = await app.request("/items", {
+    const res = await app.request("/2026-06-09/items", {
       method: "POST",
       headers: { "Content-type": "application/json" },
-      body: JSON.stringify({ date: "2026-06-09", source: "email", title: "Test email", html: "<p>Hello</p>" }),
+      body: JSON.stringify({ source: "email", title: "Test email", html: "<p>Hello</p>", sourceUrl: "https://example.com/article" }),
     });
     expect(res.status).toBe(201);
     const body = (await res.json()) as any;
@@ -171,17 +176,17 @@ describe("digest routes — integration", () => {
 
   it("POST /items — replaces existing digest with same date and category", async () => {
     // 1. Create original digest
-    await app.request("/items", {
+    await app.request("/2026-06-10/items", {
       method: "POST",
       headers: { "Content-type": "application/json" },
-      body: JSON.stringify({ date: "2026-06-10", source: "email", title: "Original Title", html: "<p>Original</p>" }),
+      body: JSON.stringify({ source: "email", title: "Original Title", html: "<p>Original</p>", sourceUrl: "https://example.com/original" }),
     });
 
     // 2. Upsert with same date and category but different title/html
-    const res = await app.request("/items", {
+    const res = await app.request("/2026-06-10/items", {
       method: "POST",
       headers: { "Content-type": "application/json" },
-      body: JSON.stringify({ date: "2026-06-10", source: "podcast", title: "New Title", html: "<p>New</p>" }),
+      body: JSON.stringify({ source: "podcast", title: "New Title", html: "<p>New</p>", sourceUrl: "https://example.com/new" }),
     });
     expect(res.status).toBe(201);
 
@@ -195,10 +200,10 @@ describe("digest routes — integration", () => {
   });
 
   it("POST /items — validates input", async () => {
-    const res = await app.request("/items", {
+    const res = await app.request("/2026-06-09/items", {
       method: "POST",
       headers: { "Content-type": "application/json" },
-      body: JSON.stringify({ date: "2026-06-09", source: "invalid" as any, title: "", html: "" }),
+      body: JSON.stringify({ source: "invalid" as any, title: "", html: "", sourceUrl: "https://example.com/article" }),
     });
     expect(res.status).toBe(400);
     const body = await res.json();
@@ -206,10 +211,10 @@ describe("digest routes — integration", () => {
     expect(body).toHaveProperty("details");
 
     // Incomplete JSON object
-    const incompleteRes = await app.request("/items", {
+    const incompleteRes = await app.request("/2026-06-09/items", {
       method: "POST",
       headers: { "Content-type": "application/json" },
-      body: JSON.stringify({ date: "2026-06-09" }),
+      body: JSON.stringify({ sourceUrl: "https://example.com/article" }),
     });
     expect(incompleteRes.status).toBe(400);
     const incompleteBody = await incompleteRes.json();
@@ -217,7 +222,7 @@ describe("digest routes — integration", () => {
     expect(incompleteBody).toHaveProperty("details");
 
     // Malformed JSON (syntax error)
-    const malformedRes = await app.request("/items", {
+    const malformedRes = await app.request("/2026-06-09/items", {
       method: "POST",
       headers: { "Content-type": "application/json" },
       body: '{"date": "2026-06-09",',
@@ -229,15 +234,15 @@ describe("digest routes — integration", () => {
   });
 
   it("GET / — lists all dates", async () => {
-    await app.request("/items", {
+    await app.request("/2026-06-08/items", {
       method: "POST",
       headers: { "Content-type": "application/json" },
-      body: JSON.stringify({ date: "2026-06-08", source: "email", title: "Yesterday", html: "<p>Old</p>" }),
+      body: JSON.stringify({ source: "email", title: "Yesterday", html: "<p>Old</p>", sourceUrl: "https://example.com/article" }),
     });
-    await app.request("/items", {
+    await app.request("/2026-06-09/items", {
       method: "POST",
       headers: { "Content-type": "application/json" },
-      body: JSON.stringify({ date: "2026-06-09", source: "podcast", title: "Today", html: "<p>New</p>" }),
+      body: JSON.stringify({ source: "podcast", title: "Today", html: "<p>New</p>", sourceUrl: "https://example.com/article" }),
     });
     const res = await app.request("/");
     expect(res.status).toBe(200);
@@ -247,28 +252,28 @@ describe("digest routes — integration", () => {
 
   it("supports multiple digests per date with different categories", async () => {
     // Item 1: tech category
-    await app.request("/items", {
+    await app.request("/2026-06-10/items", {
       method: "POST",
       headers: { "Content-type": "application/json" },
       body: JSON.stringify({ 
-        date: "2026-06-10", 
         source: "email", 
         category: "tech",
         title: "Tech News", 
-        html: "<p>Tech stuff</p>" 
+        html: "<p>Tech stuff</p>",
+        sourceUrl: "https://example.com/article" 
       }),
     });
 
     // Item 2: meetings category
-    await app.request("/items", {
+    await app.request("/2026-06-10/items", {
       method: "POST",
       headers: { "Content-type": "application/json" },
       body: JSON.stringify({ 
-        date: "2026-06-10", 
         source: "email", 
         category: "meetings",
         title: "Meeting Notes", 
-        html: "<p>Meeting stuff</p>" 
+        html: "<p>Meeting stuff</p>",
+        sourceUrl: "https://example.com/article" 
       }),
     });
 

@@ -8,6 +8,13 @@
       "when": 1781248299232,
       "tag": "0000_plain_doctor_faustus",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1781294400000,
+      "tag": "0001_add_source_url_to_digest_items",
+      "breakpoints": true
     }
   ]
 }

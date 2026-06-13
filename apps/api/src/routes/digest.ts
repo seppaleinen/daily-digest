@@ -34,6 +34,31 @@ export function createDigestHandler(db: any) {
         item.sourceUrl = `https://${item.sourceUrl}`;
       }
 
+      const existing = await db
+        .select()
+        .from(digestItems)
+        .where(
+          and(
+            eq(digestItems.date, item.date),
+            eq(digestItems.category, item.category)
+          )
+        )
+        .limit(1);
+
+      if (existing.length > 0) {
+        const updated = await db
+          .update(digestItems)
+          .set({
+            source: item.source,
+            title: item.title,
+            html: item.html,
+            sourceUrl: item.sourceUrl,
+          })
+          .where(eq(digestItems.id, existing[0].id))
+          .returning();
+        return c.json(updated[0], 201);
+      }
+
       const inserted = await db.insert(digestItems).values(item).returning();
       return c.json(inserted[0], 201);
     },

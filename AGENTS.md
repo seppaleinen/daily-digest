@@ -13,7 +13,7 @@
 - Server-side CSP header: `default-src 'none'; script-src 'none'; style-src 'unsafe-inline'` — blocks all inline scripts while allowing reader styling
 
 ### Upsert Pattern
-- Development phase: POST /digest/:date/items upserts by date+title+html (prevents duplicates during development)
+- Development phase: POST /digest/:date/items upserts by date+category (enables replacing items by category)
 - Stable phase: change to dedup error response when row already exists
 
 ### Auth Model
@@ -28,6 +28,8 @@ daily-digest/
 ├── apps/api/src/          # Hono app, routes, DB
 │   ├── db/schema.ts       # Drizzle schema (NOT in shared)
 │   └── routes/digest.ts   # API route handlers
+├── apps/spool/src/        # Pipeline: discovery → transcribe → summarize → push
+├── apps/reader/src/       # Vite + React reader UI
 ├── packages/shared/src/   # Zod schemas + TS types only
 │   └── schemas.ts         # CreateItemSchema + Source type
 └── deploy/k8s/            # Kubernetes manifests
@@ -68,11 +70,12 @@ daily-digest/
 
 ### Test Execution
 ```bash
-pnpm test        # Run all tests (unit + integration + e2e)
-pnpm test:unit   # Unit tests only
-pnpm test:integ  # Integration tests only
-pnpm test:e2e    # E2E tests only
+pnpm test        # Run all tests via turbo (parallel across packages with test scripts)
+pnpm test:all    # Run all tests + type-checking across packages
+pnpm test:e2e    # Run E2E tests (packages that define a test:e2e script)
 ```
+
+Test commands use Turborepo for orchestration. Each package defines its own test scripts in `package.json`; turbo runs them in parallel with correct build dependency ordering.
 
 ### Test Patterns to Follow
 - One test file per source module or feature boundary

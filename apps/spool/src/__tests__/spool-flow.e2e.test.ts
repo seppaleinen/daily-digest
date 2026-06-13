@@ -249,10 +249,12 @@ describe("spool → API integration", () => {
     expect(apiItems.length).toBe(0);
   });
 
-  // ── Test 3: Multiple items per date ─────────────────────
-  it("processes multiple pending items for the same date", async () => {
-    const digestDate = "2026-06-14";
+  // ── Test 3: Multiple items processed sequentially ────────
+  it("processes multiple items sequentially across dates", async () => {
+    const date1 = "2026-06-14";
+    const date2 = "2026-06-15";
 
+    // Insert first item and process immediately (only this item is pending)
     await insertSpoolItem({
       sourceType: "youtube",
       sourceUrl: "https://youtube.com/watch?v=video1",
@@ -260,9 +262,19 @@ describe("spool → API integration", () => {
       title: "Video One",
       publishedAt: Date.now(),
       status: "pending",
-      digestDate,
+      digestDate: date1,
     });
+    await orchestration.processQueue(date1);
 
+    // Verify item1 appears on date1
+    let apiItems = await apiDbHandle
+      .select()
+      .from(apiSchema.digestItems)
+      .where(eq(apiSchema.digestItems.date, date1));
+    expect(apiItems.length).toBe(1);
+    expect(apiItems[0].title).toBe("Video One");
+
+    // Insert second item and process (only this item is pending)
     await insertSpoolItem({
       sourceType: "podcast",
       sourceUrl: "https://example.com/podcast/2",
@@ -270,18 +282,16 @@ describe("spool → API integration", () => {
       title: "Podcast Two",
       publishedAt: Date.now(),
       status: "pending",
-      digestDate,
+      digestDate: date2,
     });
+    await orchestration.processQueue(date2);
 
-    await orchestration.processQueue(digestDate);
-
-    // Assert both items are done (check via API — real integration)
-    const apiItems = await apiDbHandle
+    // Verify item2 appears on date2
+    apiItems = await apiDbHandle
       .select()
       .from(apiSchema.digestItems)
-      .where(eq(apiSchema.digestItems.date, digestDate));
-    expect(apiItems.length).toBe(2);
-    const titles = apiItems.map((i: any) => i.title).sort();
-    expect(titles).toEqual(["Podcast Two", "Video One"]);
+      .where(eq(apiSchema.digestItems.date, date2));
+    expect(apiItems.length).toBe(1);
+    expect(apiItems[0].title).toBe("Podcast Two");
   });
 });

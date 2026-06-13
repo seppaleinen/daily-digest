@@ -16,8 +16,10 @@ A personal daily digest application — collect items (emails, podcasts, YouTube
     Traefik Ingress      Authentik proxy     PVC (Synology NFS)
 ```
 
-- **Monorepo**: pnpm workspaces + Turborebo, TypeScript throughout
+- **Monorepo**: pnpm workspaces + Turborepo, TypeScript throughout
 - **API**: Hono with Drizzle ORM + better-sqlite3
+- **Spool**: Pipeline service (discovery → transcribe → summarize → push to API)
+- **Reader**: Vite + React SPA
 - **Validation**: Zod schemas shared in `packages/shared`
 - **Auth**: Authentik proxy for external access; internal cluster services unauthenticated
 - **Deploy**: K8s on home lab (K3s), Traefik for ingress/TLS
@@ -29,10 +31,19 @@ A personal daily digest application — collect items (emails, podcasts, YouTube
 pnpm install
 
 # Run API locally (auto-migrates via Drizzle)
-cd apps/api && pnpm dev
+pnpm --filter @daily-digest/api dev
 
-# Run all tests
+# Run spool pipeline service
+pnpm --filter @daily-digest/spool dev
+
+# Run reader UI
+pnpm --filter @daily-digest/reader dev
+
+# Run all tests (parallel across packages via turbo)
 pnpm test
+
+# Tests + type-checking
+pnpm test:all
 
 # Build everything
 pnpm build
@@ -45,6 +56,8 @@ daily-digest/
 ├── apps/api/src/          # Hono app, routes, DB layer
 │   ├── db/schema.ts       # Drizzle schema (SQLite)
 │   └── routes/digest.ts   # API route handlers
+├── apps/spool/src/        # Pipeline: discovery → transcribe → summarize → push
+├── apps/reader/src/       # Vite + React reader UI
 ├── packages/shared/src/   # Zod schemas + TypeScript types
 │   └── schemas.ts         # Shared validation and type definitions
 ├── deploy/k8s/            # Kubernetes manifests for deployment
@@ -54,29 +67,32 @@ daily-digest/
 
 | Method | Path                | Description              |
 |--------|---------------------|--------------------------|
-| POST   | /digest/items       | Upsert an item           |
+| POST   | /digest/:date/items | Upsert an item for a date |
 | GET    | /digest             | List all dates with digests |
-| GET    | /digest/:date       | Get items for a date     |
+| GET    | /digest/:date       | Get items for a date (optional `?category=` filter) |
 
-### Create/Update Item Request Body
+### Upsert Item Request Body
 
 ```json
 {
   "source": "email",        // "email" | "podcast" | "youtube"
+  "category": "general",    // optional, defaults to "general"
   "title": "Subject line",
-  "html": "<p>Content here</p>"
+  "html": "<p>Content here</p>",
+  "sourceUrl": "https://example.com/article"
 }
 ```
+
+Date is taken from the URL path, not the body.
 
 ## Testing
 
 Three-tier testing strategy — unit, integration, and E2E:
 
 ```bash
-pnpm test        # All tests
-pnpm test:unit   # Unit tests only
-pnpm test:integ  # Integration tests only
-pnpm test:e2e    # E2E tests only
+pnpm test        # All tests via turbo (parallel across packages)
+pnpm test:all    # All tests + type-checking
+pnpm test:e2e    # E2E tests only (packages with test:e2e script)
 ```
 
 See [AGENTS.md](./AGENTS.md) for detailed testing conventions.

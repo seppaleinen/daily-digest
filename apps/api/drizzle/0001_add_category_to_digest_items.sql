@@ -1,1 +1,0 @@
-ALTER TABLE `digest_items` ADD `category` text DEFAULT 'general' NOT NULL;

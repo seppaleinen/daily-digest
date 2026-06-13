@@ -18,10 +18,15 @@ describe("Infrastructure: getDb connectivity", () => {
     
     // Run migrations
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
-    const migrationPath = path.resolve(__dirname, "../../../drizzle/0000_nice_ezekiel.sql");
-    const sql = fs.readFileSync(migrationPath, "utf-8");
+    const drizzleDir = path.resolve(__dirname, "../../../drizzle");
+    const sqlFiles = fs.readdirSync(drizzleDir)
+      .filter(f => f.endsWith(".sql"))
+      .sort();
     const sqlite = new Database(TEST_DB_PATH);
-    sqlite.exec(sql);
+    for (const file of sqlFiles) {
+      const sql = fs.readFileSync(path.join(drizzleDir, file), "utf-8");
+      sqlite.exec(sql);
+    }
     sqlite.close();
   });
 
