@@ -5,9 +5,10 @@ WORKDIR /app
 
 # --- Builder ---
 FROM base AS builder
+RUN npm install -g pnpm
 COPY package.json pnpm-workspace.yaml turbo.json tsconfig.base.json ./
 COPY apps/api/package.json packages/shared/package.json packages/tsconfig-base/package.json ./
-RUN corepack enable && npm install -g pnpm && pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile
 COPY apps/api/src ./apps/api/src
 COPY apps/api/drizzle.config.ts apps/api/
 COPY packages/shared/src ./packages/shared/src
@@ -24,6 +25,14 @@ COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 USER node
 EXPOSE 3000
 CMD ["node", "dist/index.js"]
+
+# --- Migrator ---
+FROM base AS migrator
+RUN npm install -g pnpm
+COPY --from=builder /app/apps/api/dist ./dist
+COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
+CMD ["node", "dist/index.js"]
+
 
 # --- Migrator ---
 FROM node:20-alpine AS migrator
