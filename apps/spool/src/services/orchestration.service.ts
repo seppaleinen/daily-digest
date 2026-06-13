@@ -35,16 +35,20 @@ export class OrchestrationService {
     try {
       console.log(`[Orchestration] Starting process for item: ${item.id} (${item.title})`);
       
-      await this.repository.updateStatus(item.id, "transcribing");
+      // Step 1: Extraction
       console.log(`[Orchestration] Step 1/3: Extracting audio...`);
+      await this.repository.updateStatus(item.id, "transcribing");
       await this.mediaExtraction.extractAudio(item.sourceUrl, audioPath);
 
+      // Step 2: Transcription
       console.log(`[Orchestration] Step 2/3: Transcribing...`);
-      await this.repository.updateStatus(item.id, "summarizing");
       const transcript = await this.transcription.transcribe(audioPath);
 
+      // Step 3: Summarization
       console.log(`[Orchestration] Step 3/3: Summarizing...`);
+      await this.repository.updateStatus(item.id, "summarizing");
       const summary = await this.summarization.summarize(transcript);
+      console.log(`[Orchestration] Summary length: ${summary.length} characters`);
 
       console.log(`[Orchestration] Pushing to Digest API...`);
       await this.digestApi.pushDigestItem(digestDate, {

@@ -16,9 +16,9 @@ app.use("*", async (c: Context, next: () => Promise<void>) => {
 });
 
 // Mount routes
-app.post("/items", handler.upsertItem);
-app.get("/", handler.listDates);
-app.get("/:date", handler.getItemsByDate);
+app.post("/digest/:date/items", handler.upsertItem);
+app.get("/digest", handler.listDates);
+app.get("/digest/:date", handler.getItemsByDate);
 
 app.all("*", async (c) => {
   return c.text("Not Found", 404);

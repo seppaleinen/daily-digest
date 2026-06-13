@@ -19,7 +19,7 @@ function App() {
   const API_BASE = "http://localhost:3000";
 
   useEffect(() => {
-    fetch(`${API_BASE}/`)
+    fetch(`${API_BASE}/digest`)
       .then(res => res.json())
       .then(data => setDates(data))
       .catch(err => console.error("Error fetching dates:", err));
@@ -29,7 +29,7 @@ function App() {
     setLoading(true);
     setSelectedDate(date);
     try {
-      const res = await fetch(`${API_BASE}/${date}`);
+      const res = await fetch(`${API_BASE}/digest/${date}`);
       const data = await res.json();
       setItems(data);
     } catch (err) {

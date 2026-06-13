@@ -32,7 +32,12 @@ export class SummarizationService {
           },
           {
             role: 'user',
-            content: `Summarize the following text into HTML format:\n\n${text}`,
+            content: `Summarize the following text into a concise, structured HTML format. 
+            Use semantic tags like <h3>, <p>, and <ul>/<li>. 
+            DO NOT just repeat the text. If the text is already short, provide a very brief summary.
+            
+            Text to summarize:
+            ${text}`,
           },
         ],
         temperature: 0.7,

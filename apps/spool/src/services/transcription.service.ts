@@ -32,6 +32,8 @@ export class TranscriptionService {
       headers['Authorization'] = `Bearer ${this.apiKey}`;
     }
 
+    console.log(`[TranscriptionService] Calling ${this.baseUrl} with model ${this.model}`);
+
     const response = await fetch(`${this.baseUrl}/v1/audio/transcriptions`, {
       method: 'POST',
       headers,
