@@ -4,7 +4,11 @@ import { eq } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 
 export class SpoolRepository {
-  private db = getDb();
+  private db: ReturnType<typeof getDb>;
+
+  constructor(db?: ReturnType<typeof getDb>) {
+    this.db = db ?? getDb();
+  }
 
   async upsertItem(item: NewSpoolItem) {
     const id = randomUUID(); 

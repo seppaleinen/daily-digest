@@ -7,13 +7,15 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "build": "tsc --project tsconfig.json"
+    "build": "tsc --project tsconfig.json",
+    "test": "vitest run"
   },
   "dependencies": {
     "zod": "^3.24.0"
   },
   "devDependencies": {
     "typescript": "^5.7.0",
-    "@daily-digest/tsconfig-base": "workspace:*"
+    "@daily-digest/tsconfig-base": "workspace:*",
+    "vitest": "^2.1.0"
   }
 }
