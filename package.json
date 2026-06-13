@@ -7,7 +7,7 @@
     "build": "turbo build",
     "dev": "turbo dev",
     "test": "turbo test",
-    "test:all": "turbo test type-check",
+    "test:all": "turbo test type-check test:e2e",
     "test:e2e": "turbo test:e2e",
     "api:dev": "pnpm --filter @daily-digest/api dev",
     "api:db:push": "pnpm --filter @daily-digest/api db:push",

@@ -311,4 +311,31 @@ describe("digest routes — integration", () => {
     const res = await app.request("/", { headers: { origin: "http://localhost:5173" } });
     expect(res.headers.get("Access-Control-Allow-Origin")).toBe("http://localhost:5173");
   });
+
+  it("POST /:date/items — normalizes sourceUrl without protocol", async () => {
+    const res = await app.request("/2026-06-15/items", {
+      method: "POST",
+      headers: { "Content-type": "application/json" },
+      body: JSON.stringify({ source: "email", title: "Relative URL", html: "<p>Test</p>", sourceUrl: "example.com/article" }),
+    });
+    expect(res.status).toBe(201);
+    const body = (await res.json()) as any;
+    expect(body.sourceUrl).toBe("https://example.com/article");
+  });
+
+  it("POST /:date/items — preserves sourceUrl with existing protocol", async () => {
+    const res = await app.request("/2026-06-15/items", {
+      method: "POST",
+      headers: { "Content-type": "application/json" },
+      body: JSON.stringify({ source: "email", title: "Full URL", html: "<p>Test</p>", sourceUrl: "http://custom-proto.com/article" }),
+    });
+    expect(res.status).toBe(201);
+    const body = (await res.json()) as any;
+    expect(body.sourceUrl).toBe("http://custom-proto.com/article");
+  });
+
+  it("returns 404 for unknown routes", async () => {
+    const res = await app.request("/unknown/route");
+    expect(res.status).toBe(404);
+  });
 });

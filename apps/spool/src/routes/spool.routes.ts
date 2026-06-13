@@ -6,34 +6,40 @@ import { OrchestrationService } from '../services/orchestration.service';
 import { config } from '../config';
 import { randomUUID } from 'node:crypto';
 
-const spoolRoutes = new Hono();
-const repository = new SpoolRepository();
-const discoveryService = new DiscoveryService(config);
-const orchestrationService = new OrchestrationService();
+export function createSpoolRoutes(deps?: {
+  repository?: SpoolRepository;
+  discoveryService?: DiscoveryService;
+  orchestrationService?: OrchestrationService;
+}) {
+  const repository = deps?.repository ?? new SpoolRepository();
+  const discoveryService = deps?.discoveryService ?? new DiscoveryService(config);
+  const orchestrationService = deps?.orchestrationService ?? new OrchestrationService();
 
-spoolRoutes.get('/health', (c) => c.json({ status: 'ok' }));
+  const app = new Hono();
 
-spoolRoutes.get('/queue', async (c) => {
-  const status = c.req.query('status') as SpoolStatus | undefined;
-  const items = status ? await repository.getItemsByStatus(status) : await repository.getAllItems();
-  return c.json(items);
-});
+  app.get('/health', (c) => c.json({ status: 'ok' }));
 
-spoolRoutes.post('/queue/run', async (c) => {
-  const digestDate = new Date().toISOString().split('T')[0];
-  await discoveryService.runDiscovery(digestDate);
-  await orchestrationService.processQueue(digestDate);
-  return c.json({ success: true });
-});
+  app.get('/queue', async (c) => {
+    const status = c.req.query('status') as SpoolStatus | undefined;
+    const items = status ? await repository.getItemsByStatus(status) : await repository.getAllItems();
+    return c.json(items);
+  });
 
-spoolRoutes.post('/queue/:id/retry', async (c) => {
-  const id = (c as any).param('id');
-  const digestDate = new Date().toISOString().split('T')[0];
-  await orchestrationService.retryItem(id, digestDate);
-  return c.json({ success: true });
-});
+  app.post('/queue/run', async (c) => {
+    const digestDate = new Date().toISOString().split('T')[0];
+    await discoveryService.runDiscovery(digestDate);
+    await orchestrationService.processQueue(digestDate);
+    return c.json({ success: true });
+  });
 
-spoolRoutes.post('/transcribe', async (c) => {
+  app.post('/queue/:id/retry', async (c) => {
+    const id = (c as any).param('id');
+    const digestDate = new Date().toISOString().split('T')[0];
+    await orchestrationService.retryItem(id, digestDate);
+    return c.json({ success: true });
+  });
+
+  app.post('/transcribe', async (c) => {
     const { url, sourceType, title } = await c.req.json();
     if (!url) return c.json({ error: 'URL is required' }, 400);
 
@@ -72,11 +78,22 @@ spoolRoutes.post('/transcribe', async (c) => {
     };
 
     const id = await repository.upsertItem(newItem);
-    
     await orchestrationService.processQueue(digestDate);
-    
     return c.json({ id, message: 'Transcription queued for testing', sourceType: source });
   });
 
-export default spoolRoutes;
+  return app;
+}
+
+// Backward-compatible default export (lazy) matching existing singleton pattern.
+// Uses Proxy so the module can be imported without instantiating services,
+// enabling tests to use the factory with DI. Initialization happens on first
+// property access (when Hono mounts the routes).
+let _routes: ReturnType<typeof createSpoolRoutes>;
+export default new Proxy({} as ReturnType<typeof createSpoolRoutes>, {
+  get(_, prop) {
+    if (!_routes) _routes = createSpoolRoutes();
+    return Reflect.get(_routes!, prop, _routes);
+  },
+});
 
