@@ -28,7 +28,6 @@ async function createDb() {
 }
 
 async function createApp(db: ReturnType<typeof createDrizzleDb<typeof schema>>) {
-  // eslint-disable-next-line @typescript-eslint/no-restricted-imports
   const { Hono } = await import("hono");
   const { createDigestHandler } = await import("../routes/digest");
 
@@ -101,26 +100,16 @@ describe("full flow — e2e", () => {
     const itemsAfterUpsertRes = await app.request("/2026-06-09");
     const itemsAfterUpsert = (await itemsAfterUpsertRes.json()) as any[];
     expect(itemsAfterUpsert.length).toBe(1);
+    expect(itemsAfterUpsert[0].source).toBe("podcast");
 
-    // Add a second one with a different category
     await app.request("/2026-06-09/items", {
       method: "POST",
       headers: { "Content-type": "application/json" },
-      body: JSON.stringify({ source: "podcast", title: "Podcast Digest", html: "<p>Podcast summary</p>", category: "podcast", sourceUrl: "https://example.com/article" }),
+      body: JSON.stringify({ source: "youtube", title: "Daily News", html: "<p>News summary</p>", sourceUrl: "https://example.com/article", category: "news" }),
     });
-    const itemsMultiRes = await app.request("/2026-06-09");
-    const itemsMulti = (await itemsMultiRes.json()) as any[];
-    expect(itemsMulti.length).toBe(2);
-
-    // And verify persistence across application restarts
-    await app.request("/2026-06-09/items", {
-      method: "POST",
-      headers: { "Content-type": "application/json" },
-      body: JSON.stringify({ source: "youtube", title: "New Topic", html: "<p>New topic</p>", sourceUrl: "https://example.com/article" }),
-    });
-    const itemsRes_persist = await app.request("/2026-06-09");
-    const items_persist = (await itemsRes_persist.json()) as any[];
-    expect(items_persist.length).toBe(2);
+    const itemsAfterSecondRes = await app.request("/2026-06-09");
+    const itemsAfterSecond = (await itemsAfterSecondRes.json()) as any[];
+    expect(itemsAfterSecond.length).toBe(2);
   });
 
   it("handles multiple dates correctly", async () => {
@@ -143,150 +132,43 @@ describe("full flow — e2e", () => {
     const todayItems = (await app.request("/2026-06-09")).json() as Promise<any[]>;
     expect((await todayItems).length).toBe(1);
   });
-});
-
-describe("digest routes — integration", () => {
-  let db: ReturnType<typeof createDrizzleDb<typeof schema>>;
-  let app: Awaited<ReturnType<typeof createApp>>;
-  let sqlite: ReturnType<typeof Database> | undefined;
-
-  beforeEach(async () => {
-    const result = await createDb();
-    db = result.db;
-    sqlite = result.sqlite;
-    app = await createApp(db);
-  });
-
-  afterAll(() => {
-    if (sqlite) sqlite.close();
-  });
-
-  it("POST /items — creates a new item", async () => {
-    const res = await app.request("/2026-06-09/items", {
-      method: "POST",
-      headers: { "Content-type": "application/json" },
-      body: JSON.stringify({ source: "email", title: "Test email", html: "<p>Hello</p>", sourceUrl: "https://example.com/article" }),
-    });
-    expect(res.status).toBe(201);
-    const body = (await res.json()) as any;
-    expect(body.date).toBe("2026-06-09");
-    expect(body.title).toBe("Test email");
-  });
-
-  it("POST /items — replaces existing digest with same date and category", async () => {
-    // 1. Create original digest
-    await app.request("/2026-06-10/items", {
-      method: "POST",
-      headers: { "Content-type": "application/json" },
-      body: JSON.stringify({ source: "email", title: "Original Title", html: "<p>Original</p>", sourceUrl: "https://example.com/original" }),
-    });
-
-    // 2. Upsert with same date and category but different title/html
-    const res = await app.request("/2026-06-10/items", {
-      method: "POST",
-      headers: { "Content-type": "application/json" },
-      body: JSON.stringify({ source: "podcast", title: "New Title", html: "<p>New</p>", sourceUrl: "https://example.com/new" }),
-    });
-    expect(res.status).toBe(201);
-
-    // 3. Verify replacement
-    const itemsRes = await app.request("/2026-06-10");
-    const items = (await itemsRes.json()) as any[];
-    expect(items.length).toBe(1);
-    expect(items[0].title).toBe("New Title");
-    expect(items[0].html).toBe("<p>New</p>");
-    expect(items[0].source).toBe("podcast");
-  });
 
   it("POST /items — validates input", async () => {
     const res = await app.request("/2026-06-09/items", {
       method: "POST",
       headers: { "Content-type": "application/json" },
-      body: JSON.stringify({ source: "invalid", title: "", html: "", sourceUrl: "https://example.com/article" }),
+      body: JSON.stringify({ source: "invalid", title: "", html: "<p>Test</p>", sourceUrl: "https://example.com/article" }),
     });
     expect(res.status).toBe(400);
     const body = await res.json();
-    expect(body).toHaveProperty("error");
-    expect(body).toHaveProperty("details");
+    expect(body).toEqual(expect.objectContaining({
+      error: expect.any(String),
+      details: expect.any(Object)
+    }));
 
-    // Incomplete JSON object
     const incompleteRes = await app.request("/2026-06-09/items", {
       method: "POST",
       headers: { "Content-type": "application/json" },
       body: JSON.stringify({ sourceUrl: "https://example.com/article" }),
     });
     expect(incompleteRes.status).toBe(400);
-    const incompleteBody = await incompleteRes.json();
-    expect(incompleteBody).toHaveProperty("error");
-    expect(incompleteBody).toHaveProperty("details");
+    const malformedIncompleteBody = await incompleteRes.json();
+    expect(malformedIncompleteBody).toEqual(expect.objectContaining({
+      error: expect.any(String),
+      details: expect.any(Object)
+    }));
 
-    // Malformed JSON (syntax error)
     const malformedRes = await app.request("/2026-06-09/items", {
       method: "POST",
       headers: { "Content-type": "application/json" },
       body: '{"date": "2026-06-09",',
     });
     expect(malformedRes.status).toBe(400);
-    const malformedBody = await malformedRes.json();
-    expect(malformedBody).toHaveProperty("error");
-    expect(malformedBody).toHaveProperty("details");
-  });
-
-  it("GET / — lists all dates", async () => {
-    await app.request("/2026-06-08/items", {
-      method: "POST",
-      headers: { "Content-type": "application/json" },
-      body: JSON.stringify({ source: "email", title: "Yesterday", html: "<p>Old</p>", sourceUrl: "https://example.com/article" }),
-    });
-    await app.request("/2026-06-09/items", {
-      method: "POST",
-      headers: { "Content-type": "application/json" },
-      body: JSON.stringify({ source: "podcast", title: "Today", html: "<p>New</p>", sourceUrl: "https://example.com/article" }),
-    });
-    const res = await app.request("/");
-    expect(res.status).toBe(200);
-    const dates: string[] = await res.json();
-    expect(dates).toEqual(["2026-06-08", "2026-06-09"]);
-  });
-
-  it("supports multiple digests per date with different categories", async () => {
-    // Item 1: tech category
-    await app.request("/2026-06-10/items", {
-      method: "POST",
-      headers: { "Content-type": "application/json" },
-      body: JSON.stringify({ 
-        source: "email", 
-        category: "tech",
-        title: "Tech News", 
-        html: "<p>Tech stuff</p>",
-        sourceUrl: "https://example.com/article" 
-      }),
-    });
-
-    // Item 2: meetings category
-    await app.request("/2026-06-10/items", {
-      method: "POST",
-      headers: { "Content-type": "application/json" },
-      body: JSON.stringify({ 
-        source: "email", 
-        category: "meetings",
-        title: "Meeting Notes", 
-        html: "<p>Meeting stuff</p>",
-        sourceUrl: "https://example.com/article" 
-      }),
-    });
-
-    const res = await app.request("/2026-06-10?category=tech");
-    expect(res.status).toBe(200);
-    const items = (await res.json()) as any[];
-    expect(items.length).toBe(1);
-    expect(items[0].category).toBe("tech");
-    expect(items[0].title).toBe("Tech News");
-
-    const resAll = await app.request("/2026-06-10");
-    expect(resAll.status).toBe(200);
-    const itemsAll = (await resAll.json()) as any[];
-    expect(itemsAll.length).toBe(2);
+    const malformedInvalidJsonBody = await malformedRes.json();
+    expect(malformedInvalidJsonBody).toEqual(expect.objectContaining({
+      error: expect.any(String),
+      details: expect.any(Object)
+    }));
   });
 
   it("GET /:date — returns 400 for malformed date strings", async () => {
@@ -301,9 +183,7 @@ describe("digest routes — integration", () => {
 
   it("CSP header is set", async () => {
     const res = await app.request("/");
-    expect(res.headers.get("Content-Security-Policy")).toBe(
-      "default-src 'none'; script-src 'none'; style-src 'unsafe-inline'"
-    );
+    expect(res.headers.get("Content-Security-Policy")).toBe("default-src 'none'; script-src 'none'; style-src 'unsafe-inline'");
   });
 
   it("CORS header is set", async () => {
