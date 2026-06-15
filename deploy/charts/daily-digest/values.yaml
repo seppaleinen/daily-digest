@@ -1,3 +1,9 @@
+# Namespace configuration
+namespace:
+  create: false
+  name: daily-digest
+
+# Global image settings — each subchart overrides these
 image:
   repository: daily-digest-image
   tag: latest
@@ -9,18 +15,34 @@ api:
   image:
     repository: api-image
     tag: latest
+  service:
+    port: 80
   db:
-    storageClass: nfs
+    storageClass: ""
     size: 1Gi
 
 spool:
   image:
     repository: spool-image
     tag: latest
+  service:
+    type: ClusterIP
+    port: 3001
+  ingress:
+    enabled: false
+    host: spool.daily-digest.local
+    entryPoints:
+      - websecure
 
 reader:
   image:
     repository: reader-image
     tag: latest
+  service:
+    type: ClusterIP
+    port: 80
   ingress:
+    enabled: true
     host: reader.daily-digest.local
+    entryPoints:
+      - websecure

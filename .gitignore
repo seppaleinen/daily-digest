@@ -13,3 +13,4 @@ apps/api/*.db
 apps/api/*.db-shm
 apps/api/*.db-wal
 
+*.tgz

@@ -3,6 +3,26 @@ image:
   tag: latest
   pullPolicy: IfNotPresent
 
+service:
+  type: ClusterIP
+  port: 3001
+
+ingress:
+  enabled: false
+  host: spool.daily-digest.local
+  entryPoints:
+    - websecure
+  middlewares:
+    - name: authentik-auth
+
+config:
+  whisperUrl: "http://whisper-service.default.svc.cluster.local"
+  summarizerUrl: "http://summarizer-service.default.svc.cluster.local"
+  digestApiUrl: "http://digest-api.default.svc.cluster.local"
+
+secrets:
+  youtubeApiKey: ""
+
 replicaCount: 1
 
 resources:

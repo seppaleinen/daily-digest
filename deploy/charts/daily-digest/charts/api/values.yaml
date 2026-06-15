@@ -4,7 +4,7 @@ image:
   pullPolicy: IfNotPresent
 
 db:
-  storageClass: nfs
+  storageClass: ""
   size: 1Gi
 
 service:

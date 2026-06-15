@@ -20,6 +20,35 @@ spec:
         - name: spool
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 3001
+              protocol: TCP
+          env:
+            - name: SPOOL_CONFIG_PATH
+              value: /config/spool-config.yaml
+            - name: WHISPER_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "spool.fullname" . }}-config
+                  key: WHISPER_URL
+            - name: SUMMARIZER_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "spool.fullname" . }}-config
+                  key: SUMMARIZER_URL
+            - name: DIGEST_API_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "spool.fullname" . }}-config
+                  key: DIGEST_API_URL
+            - name: YOUTUBE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "spool.fullname" . }}-secrets
+                  key: YOUTUBE_API_KEY
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
             - name: tmp
               mountPath: /tmp/spool

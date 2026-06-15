@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "spool.fullname" . }}-config
+  labels:
+    {{- include "spool.labels" . | nindent 4 }}
+data:
+  WHISPER_URL: {{ .Values.config.whisperUrl | quote }}
+  SUMMARIZER_URL: {{ .Values.config.summarizerUrl | quote }}
+  DIGEST_API_URL: {{ .Values.config.digestApiUrl | quote }}

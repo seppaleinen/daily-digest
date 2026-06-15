@@ -2,9 +2,9 @@
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
 metadata:
-  name: {{ include "reader.fullname" . }}
+  name: {{ include "spool.fullname" . }}-ingress
   labels:
-    {{- include "reader.labels" . | nindent 4 }}
+    {{- include "spool.labels" . | nindent 4 }}
 spec:
   entryPoints:
     {{- toYaml .Values.ingress.entryPoints | nindent 4 }}
@@ -12,7 +12,7 @@ spec:
     - match: Host(`{{ .Values.ingress.host }}`)
       kind: Rule
       services:
-        - name: {{ include "reader.fullname" . }}
+        - name: {{ include "spool.fullname" . }}
           port: {{ .Values.service.port }}
   {{- if .Values.ingress.middlewares }}
   middlewares:
