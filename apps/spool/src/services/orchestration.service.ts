@@ -2,14 +2,16 @@ import fs from "node:fs";
 import path from "node:path";
 import { SpoolRepository } from "../db/repository";
 import { SpoolStatus } from "../db/schema";
-import { MediaExtractionService } from "./media-extraction.service";
+import { YoutubeExtractionService } from "./youtube-extraction.service";
+import { AudioExtractionService } from "./audio-extraction.service";
 import { TranscriptionService } from "./transcription.service";
 import { SummarizationService } from "./summarization.service";
 import { DigestApiService } from "./digest-api.service";
 
 export interface OrchestrationOptions {
   repository?: SpoolRepository;
-  mediaExtraction?: MediaExtractionService;
+  youtubeExtraction?: YoutubeExtractionService;
+  audioExtraction?: AudioExtractionService;
   transcription?: TranscriptionService;
   summarization?: SummarizationService;
   digestApi?: DigestApiService;
@@ -18,7 +20,8 @@ export interface OrchestrationOptions {
 
 export class OrchestrationService {
   private repository: SpoolRepository;
-  private mediaExtraction: MediaExtractionService;
+  private youtubeExtraction: YoutubeExtractionService;
+  private audioExtraction: AudioExtractionService;
   private transcription: TranscriptionService;
   private summarization: SummarizationService;
   private digestApi: DigestApiService;
@@ -26,7 +29,8 @@ export class OrchestrationService {
 
   constructor(options?: OrchestrationOptions) {
     this.repository = options?.repository ?? new SpoolRepository();
-    this.mediaExtraction = options?.mediaExtraction ?? new MediaExtractionService();
+    this.youtubeExtraction = options?.youtubeExtraction ?? new YoutubeExtractionService();
+    this.audioExtraction = options?.audioExtraction ?? new AudioExtractionService();
     this.transcription = options?.transcription ?? new TranscriptionService();
     this.summarization = options?.summarization ?? new SummarizationService();
     this.digestApi = options?.digestApi ?? new DigestApiService();
@@ -51,14 +55,21 @@ export class OrchestrationService {
     try {
       console.log(`[Orchestration] Starting process for item: ${item.id} (${item.title})`);
       
-      // Step 1: Extraction
-      console.log(`[Orchestration] Step 1/3: Extracting audio...`);
+      // Step 1: Extraction (source-type dependent)
       await this.repository.updateStatus(item.id, "transcribing");
-      await this.mediaExtraction.extractAudio(item.sourceUrl, audioPath);
+      let transcript: string;
 
-      // Step 2: Transcription
-      console.log(`[Orchestration] Step 2/3: Transcribing...`);
-      const transcript = await this.transcription.transcribe(audioPath);
+      if (item.sourceType === "youtube") {
+        console.log(`[Orchestration] Step 1/3: Extracting YouTube audio...`);
+        await this.youtubeExtraction.extractAudio(item.sourceUrl, audioPath);
+        console.log(`[Orchestration] Step 2/3: Transcribing...`);
+        transcript = await this.transcription.transcribe(audioPath);
+      } else {
+        console.log(`[Orchestration] Step 1/3: Downloading podcast audio...`);
+        await this.audioExtraction.downloadAudio(item.sourceUrl, audioPath);
+        console.log(`[Orchestration] Step 2/3: Transcribing...`);
+        transcript = await this.transcription.transcribe(audioPath);
+      }
 
       // Step 3: Summarization
       console.log(`[Orchestration] Step 3/3: Summarizing...`);

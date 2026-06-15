@@ -53,8 +53,11 @@ let apiDbPath: string;
 let apiSqlite: Database;
 
 // ─── Mock services ─────────────────────────────────────────
-const mockMediaExtraction = {
+const mockYoutubeExtraction = {
   extractAudio: vi.fn<[string, string], Promise<void>>(),
+};
+const mockAudioExtraction = {
+  downloadAudio: vi.fn<[string, string], Promise<void>>(),
 };
 const mockTranscription = {
   transcribe: vi.fn<[string], Promise<string>>(),
@@ -147,7 +150,8 @@ describe("spool → API integration", () => {
     const { OrchestrationService } = await import("../services/orchestration.service");
     orchestration = new OrchestrationService({
       repository: spoolRepo,
-      mediaExtraction: mockMediaExtraction,
+      youtubeExtraction: mockYoutubeExtraction,
+      audioExtraction: mockAudioExtraction,
       transcription: mockTranscription,
       summarization: mockSummarization,
       digestApi,
@@ -165,7 +169,8 @@ describe("spool → API integration", () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
-    mockMediaExtraction.extractAudio.mockResolvedValue(undefined);
+    mockYoutubeExtraction.extractAudio.mockResolvedValue(undefined);
+    mockAudioExtraction.downloadAudio.mockResolvedValue(undefined);
     mockTranscription.transcribe.mockResolvedValue("Mock transcript text.");
     mockSummarization.summarize.mockResolvedValue("<p>Mock summary.</p>");
 
@@ -209,16 +214,17 @@ describe("spool → API integration", () => {
     expect(apiItems[0].html).toBe("<p>Mock summary.</p>");
     expect(apiItems[0].sourceUrl).toBe("https://youtube.com/watch?v=test123");
 
-    // Verify mock call chain
-    expect(mockMediaExtraction.extractAudio).toHaveBeenCalledWith(
+    // Verify mock call chain — YouTube path uses youtubeExtraction
+    expect(mockYoutubeExtraction.extractAudio).toHaveBeenCalledWith(
       "https://youtube.com/watch?v=test123",
       expect.stringContaining(".mp3")
     );
+    expect(mockAudioExtraction.downloadAudio).not.toHaveBeenCalled();
     expect(mockTranscription.transcribe).toHaveBeenCalledOnce();
     expect(mockSummarization.summarize).toHaveBeenCalledWith("Mock transcript text.");
   });
 
-  // ── Test 2: Transcription failure ───────────────────────
+  // ── Test 2: Podcast — download + transcription failure ──
   it("marks item as failed when transcription throws", async () => {
     const digestDate = "2026-06-13";
     mockTranscription.transcribe.mockRejectedValue(new Error("API timeout"));
@@ -241,6 +247,13 @@ describe("spool → API integration", () => {
     expect(spoolItem).not.toBeNull();
     expect(spoolItem!.status).toBe("failed");
     expect(spoolItem!.error).toContain("API timeout");
+
+    // Verify podcast path used audioExtraction, not youtubeExtraction
+    expect(mockAudioExtraction.downloadAudio).toHaveBeenCalledWith(
+      "https://example.com/podcast/1",
+      expect.stringContaining(".mp3")
+    );
+    expect(mockYoutubeExtraction.extractAudio).not.toHaveBeenCalled();
 
     // API should have NO items (pipeline failed before pushing)
     const apiItems = await apiDbHandle
@@ -294,5 +307,9 @@ describe("spool → API integration", () => {
       .where(eq(apiSchema.digestItems.date, date2));
     expect(apiItems.length).toBe(1);
     expect(apiItems[0].title).toBe("Podcast Two");
+
+    // Verify branching: youtube item used youtubeExtraction, podcast used audioExtraction
+    expect(mockYoutubeExtraction.extractAudio).toHaveBeenCalledTimes(1);
+    expect(mockAudioExtraction.downloadAudio).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,7 +1,5 @@
 FROM node:22-alpine
 
-RUN apk add --no-cache yt-dlp ffmpeg
-
 # Use the existing node user (UID 1000) instead of creating a new one to avoid conflicts
 USER node
 
