@@ -1,25 +1,43 @@
-FROM node:22-alpine AS base
+# --- STAGE 1: Base (Build Essentials) ---
+FROM node:20-alpine AS base
+RUN apk add --no-cache python3 make g++
 RUN corepack enable
 WORKDIR /app
 
-# Copy root files
-COPY package.json pnpm-lock.yaml ./
-
-# Copy all package.json files to satisfy workspace resolution
+# --- STAGE 2: Dependencies ---
+FROM base AS deps
+COPY pnpm-lock.yaml package.json pnpm-workspace.yaml ./
 COPY apps/api/package.json ./apps/api/
-COPY apps/spool/package.json ./apps/spool/
-COPY apps/reader/package.json ./apps/reader/
 COPY packages/shared/package.json ./packages/shared/
+# CRITICAL: Do NOT use --ignore-scripts; better-sqlite3 requires native compilation
+RUN pnpm install --frozen-lockfile
 
-# Install dependencies for the specific service
-RUN pnpm install --filter @daily-digest/api --frozen-lockfile
+# --- STAGE 3: Builder ---
+FROM deps AS builder
+COPY . .
+RUN pnpm --filter @daily-digest/api build
 
-# --- Production Stage ---
-FROM node:22-alpine AS production
+# --- STAGE 4: Production Dependencies ---
+FROM base AS prod-deps
+RUN corepack enable
+COPY pnpm-lock.yaml package.json pnpm-workspace.yaml ./
+COPY apps/api/package.json ./apps/api/
+COPY packages/shared/package.json ./packages/shared/
+RUN pnpm install --prod --frozen-lockfile
+
+# --- STAGE 5: Runner ---
+FROM node:20-alpine AS runner
 WORKDIR /app
-COPY --from=base /app/node_modules ./node_modules
-COPY --from=base /app/package.json ./
-COPY --from=base /app/apps/api/package.json ./apps/api/
-COPY --from=base /app/apps/api/src ./src
+# node:20-alpine already has a node user with UID 1000
+USER node
+COPY --from=prod-deps /app/node_modules ./node_modules
+COPY --from=builder /app/apps/api/dist ./apps/api/dist
+COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 EXPOSE 3001
-CMD ["pnpm", "start"]
+CMD ["node", "apps/api/dist/index.js"]
+
+# --- STAGE: Migrator (K8s initContainer) ---
+FROM builder AS migrator
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+CMD ["npx", "drizzle-kit", "push"]

@@ -1,18 +1,18 @@
-{{- define "spool.name" -}}{{ .Chart.Name | trunc 63 | trim '-' }}{{- end -}}
+{{- define "spool.name" -}}{{ .Chart.Name | trunc 63 | trimSuffix "-" }}{{- end -}}
 
-{{- define "spool.fullname" -}}{{ .Release.Name | trunc 63 | trim '-' }}{{- end -}}
+{{- define "spool.fullname" -}}{{ .Release.Name | trunc 63 | trimSuffix "-" }}{{- end -}}
 
 {{- define "spool.labels" -}}
-app.kubernetes.io/name: {{ .Chart.Name | trunc 63 | trim '-' }}
-app.kubernetes.io/instance: {{ .Release.Name | trunc 63 | trim '-' }}
-app.kubernetes.io/chart: {{ .Chart.Name | trunc 63 | trim '-' }}
+app.kubernetes.io/name: {{ .Chart.Name | trunc 63 | trimSuffix "-" }}
+app.kubernetes.io/instance: {{ .Release.Name | trunc 63 | trimSuffix "-" }}
+app.kubernetes.io/chart: {{ .Chart.Name | trunc 63 | trimSuffix "-" }}
 app.kubernetes.io/component: {{ .Chart.Component | default "api" }}
 app.kubernetes.io/part-of: {{ .Chart.AppVersion | quote }}
 {{- end }}
 
 {{- define "spool.selectorLabels" -}}
-app.kubernetes.io/name: {{ .Chart.Name | trunc 63 | trim '-' }}
-app.kubernetes.io/instance: {{ .Release.Name | trunc 63 | trim '-' }}
+app.kubernetes.io/name: {{ .Chart.Name | trunc 63 | trimSuffix "-" }}
+app.kubernetes.io/instance: {{ .Release.Name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{- define "spool.image" -}}

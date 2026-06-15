@@ -20,6 +20,8 @@ config:
   summarizerUrl: "http://summarizer-service.default.svc.cluster.local"
   digestApiUrl: "http://digest-api.default.svc.cluster.local"
   spoolConfigPath: "/config/spool-config.yaml"
+  # Directory containing the config file
+  spoolConfigDir: "/config"
 
 # For testing purposes, but should be handled via secrets in prod
 secrets:

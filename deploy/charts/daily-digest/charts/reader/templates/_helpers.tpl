@@ -1,22 +1,22 @@
 {{- define "reader.name" -}}
-{{- .Chart.Name | trunc 63 | trim '-' }}
+{{- .Chart.Name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{- define "reader.fullname" -}}
 {{- if .Values.fullnameOverride }}
-{{- .Values.fullnameOverride | trunc 63 | trim '-' }}
+{{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
-{{- printf "%s-%s" .Release.Name .Chart.Name | trunc 63 | trim '-' }}
+{{- printf "%s-%s" .Release.Name .Chart.Name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 {{- end }}
 
 {{- define "reader.labels" -}}
-helm.sh/chart: {{ printf "%s-%s, %v" .Chart.Name .Chart.Version .AppVersion | replace " " "%-" | trunc 63 | trim '-' }}
+helm.sh/chart: {{ printf "%s-%s, %v" .Chart.Name .Chart.Version .AppVersion | replace " " "%-" | trunc 63 | trimSuffix "-" }}
 {{ include "reader.selectorLabels" . }}
 {{- end }}
 
 {{- define "reader.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "reader.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
-app.kubernetes.io/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version | replace " " "%-" | trunc 63 | trim '-' }}
+app.kubernetes.io/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version | replace " " "%-" | trunc 63 | trimSuffix "-" }}
 {{- end }}

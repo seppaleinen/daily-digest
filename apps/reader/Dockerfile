@@ -1,22 +1,17 @@
-# Stage 1: Build stage
-FROM node:22-alpine AS build-stage
+# --- STAGE 1: Build ---
+FROM node:20-alpine AS build
 RUN corepack enable
 WORKDIR /app
-# Copy root lockfile and all package.jsons
-COPY pnpm-lock.yaml ./
-COPY package.json ./
+COPY pnpm-lock.yaml package.json pnpm-workspace.yaml ./
 COPY apps/reader/package.json ./apps/reader/
 COPY packages/shared/package.json ./packages/shared/
-RUN pnpm install --filter @daily-digest/reader
-
-# Copy source code
+RUN pnpm install --frozen-lockfile
 COPY . .
-RUN pnpm build
+RUN pnpm --filter reader build
 
-# Stage 2: Production stage
+# --- STAGE 2: Production ---
 FROM nginx:stable-alpine
-# Copy build artifacts to nginx html directory
-COPY --from=build-stage /app/dist /usr/share/nginx/html
-# Copy custom nginx config if needed (we'll assume default for now)
+WORKDIR /usr/share/nginx/html
+COPY --from=build /app/apps/reader/dist .
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

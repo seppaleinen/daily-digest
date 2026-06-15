@@ -12,6 +12,10 @@ concurrency:
   group: release
   cancel-in-progress: false
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
 jobs:
   # ── Guard: skip if the triggering CI run didn't succeed ───────────────────
   ci-gate:
@@ -52,11 +56,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # Reads the conventional commit messages and decides the version bump:
-      #   feat: …          → minor (1.x.0)
-      #   fix: …           → patch (1.0.x)
-      #   BREAKING CHANGE  → major (x.0.0)
-      #   chore|docs|…     → patch (default fallback)
       - name: Bump version and push tag
         id: tag
         uses: mathieudutour/github-tag-action@v6.2
@@ -67,13 +66,14 @@ jobs:
           tag_prefix: "v"
           release_branches: main
 
-  # ── Build Docker images per platform (native runners) ──────────────────
+  # ── Build Docker images per service per platform ────────────────────────
   docker-build:
-    name: Build (${{ matrix.platform }})
+    name: Build ${{ matrix.service }} (${{ matrix.platform }})
     needs: version
     strategy:
       fail-fast: false
       matrix:
+        service: [api, spool, reader]
         include:
           - platform: linux/amd64
             suffix: amd64
@@ -85,10 +85,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-
-    env:
-      REGISTRY: ghcr.io
-      IMAGE_NAME: ${{ github.repository }}
 
     steps:
       - uses: actions/checkout@v4
@@ -107,7 +103,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.service }}
           flavor: |
             latest=false
           tags: |
@@ -117,22 +113,25 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
+          file: apps/${{ matrix.service }}/Dockerfile
           target: runner
           push: true
           platforms: ${{ matrix.platform }}
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest-${{ matrix.suffix }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.version.outputs.new_tag }}-${{ matrix.suffix }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-${{ matrix.suffix }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.service }}:latest-${{ matrix.suffix }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.service }}:${{ needs.version.outputs.new_tag }}-${{ matrix.suffix }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.service }}:${{ github.sha }}-${{ matrix.suffix }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Build and push migrations image
+      - name: Build and push migrations image (API only)
+        if: matrix.service == 'api'
         uses: docker/build-push-action@v6
         with:
           context: .
-          target: builder
+          file: apps/api/Dockerfile
+          target: migrator
           push: true
           platforms: ${{ matrix.platform }}
           tags: |
@@ -152,8 +151,6 @@ jobs:
       packages: write
 
     env:
-      REGISTRY: ghcr.io
-      IMAGE_NAME: ${{ github.repository }}
       TAG: ${{ needs.version.outputs.new_tag }}
 
     steps:
@@ -167,17 +164,18 @@ jobs:
       - name: Create and push multi-arch manifests
         run: |
           set -euo pipefail
+          for service in api spool reader; do
+            docker buildx imagetools create \
+              -t $REGISTRY/$IMAGE_NAME-$service:latest \
+              -t $REGISTRY/$IMAGE_NAME-$service:$TAG \
+              -t $REGISTRY/$IMAGE_NAME-$service:${TAG#v} \
+              -t $REGISTRY/$IMAGE_NAME-$service:sha-${{ github.sha }} \
+              $REGISTRY/$IMAGE_NAME-$service:latest-amd64 \
+              $REGISTRY/$IMAGE_NAME-$service:latest-arm64
+          done
 
-          # ── Runner image tags ──
-          docker buildx imagetools create \
-            -t $REGISTRY/$IMAGE_NAME:latest \
-            -t $REGISTRY/$IMAGE_NAME:$TAG \
-            -t $REGISTRY/$IMAGE_NAME:${TAG#v} \
-            -t $REGISTRY/$IMAGE_NAME:sha-${{ github.sha }} \
-            $REGISTRY/$IMAGE_NAME:latest-amd64 \
-            $REGISTRY/$IMAGE_NAME:latest-arm64
-
-          # ── Migrations image tags ──
+      - name: Create multi-arch manifests for migrations image
+        run: |
           docker buildx imagetools create \
             -t $REGISTRY/$IMAGE_NAME-migrate:latest \
             -t $REGISTRY/$IMAGE_NAME-migrate:$TAG \
@@ -188,8 +186,10 @@ jobs:
 
       - name: Image digests
         run: |
-          echo "Runner image:    $REGISTRY/$IMAGE_NAME:$TAG"
-          echo "Migrations image: $REGISTRY/$IMAGE_NAME-migrate:$TAG"
+          echo "API:      $REGISTRY/$IMAGE_NAME-api:$TAG"
+          echo "Spool:    $REGISTRY/$IMAGE_NAME-spool:$TAG"
+          echo "Reader:   $REGISTRY/$IMAGE_NAME-reader:$TAG"
+          echo "Migrate:  $REGISTRY/$IMAGE_NAME-migrate:$TAG"
 
   # ── Create GitHub Release with auto-generated changelog ───────────────────
   github-release:

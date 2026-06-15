@@ -9,7 +9,8 @@ spec:
   replicas: {{ .Values.replicaCount }}
   {{- end }}
   selector:
-    {{- include "spool.selectorLabels" . | nindent 4 }}
+    matchLabels:
+      {{- include "spool.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -57,7 +58,7 @@ spec:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
             - name: config-volume
-              mountPath: {{ .Values.config.spoolConfigPath | dirname }}
+              mountPath: {{ .Values.config.spoolConfigDir }}
               readOnly: true
             - name: spool-tmp
               mountPath: /tmp/spool
