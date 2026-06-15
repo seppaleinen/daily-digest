@@ -1,8 +1,11 @@
 # Stage 1: Build stage
 FROM node:22-alpine AS build-stage
-WORKDIR /app
 RUN corepack enable
-COPY package.json pnpm-lock.yaml* ./
+WORKDIR /app
+# Copy root lockfile and all package.jsons
+COPY pnpm-lock.yaml ./
+COPY package.json ./
+COPY apps/reader/package.json ./apps/reader/
 RUN pnpm install
 
 # Copy source code

@@ -36,12 +36,27 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: apps/${{ matrix.service }}
+          context: .
+          file: apps/${{ matrix.service }}/Dockerfile
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/daily-digest-${{ matrix.service }}:latest
 
-  deploy-charts:
+
+  lint-charts:
     needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: 'latest'
+      - name: Helm Lint
+        run: helm lint deploy/charts/daily-digest
+
+  deploy-charts:
+    needs: lint-charts
     runs-on: ubuntu-latest
     permissions:
       contents: read

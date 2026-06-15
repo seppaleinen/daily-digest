@@ -9,6 +9,7 @@
     "test": "turbo test",
     "test:all": "turbo test type-check test:e2e",
     "test:e2e": "turbo test:e2e",
+    "lint:charts": "helm lint deploy/charts/daily-digest",
     "api:dev": "pnpm --filter @daily-digest/api dev",
     "api:db:push": "pnpm --filter @daily-digest/api db:push",
     "api:test": "pnpm --filter @daily-digest/api test",

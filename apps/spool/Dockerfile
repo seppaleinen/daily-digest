@@ -1,21 +1,15 @@
 FROM node:22-alpine
-
-# Use the existing node user (UID 1000) instead of creating a new one to avoid conflicts
-USER node
-
+RUN corepack enable
 WORKDIR /app
-
-# Copy package files
-COPY --chown=node:node package.json pnpm-lock.yaml* ./
-
-# Install dependencies
-RUN corepack enable && pnpm install --frozen-lockfile
-
-# Copy source code
-COPY --chown=node:node src ./src
+# Copy root lockfile and all package.jsons
+COPY pnpm-lock.yaml ./
+COPY package.json ./
+COPY apps/spool/package.json ./apps/spool/
+RUN pnpm install --filter @daily-digest/spool --frozen-lockfile
 
 # Expose port
 EXPOSE 3001
 
 # Start the service
 CMD ["pnpm", "dev"]
+
