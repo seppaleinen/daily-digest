@@ -14,7 +14,7 @@
     "@distube/ytdl-core": "^4.16.12",
     "better-sqlite3": "latest",
     "dotenv": "latest",
-    "drizzle-orm": "^0.38.0",
+    "drizzle-orm": "^0.45.2",
     "hono": "latest",
     "yaml": "latest",
     "zod": "^3.24.0"
@@ -26,6 +26,6 @@
     "drizzle-kit": "^0.31.10",
     "tsx": "latest",
     "typescript": "^5.7.0",
-    "vitest": "latest"
+    "vitest": "^3.2.6"
   }
 }
