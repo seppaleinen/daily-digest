@@ -1,0 +1,12 @@
+dependencies:
+- name: api
+  repository: file://./charts/api
+  version: 0.1.0
+- name: spool
+  repository: file://./charts/spool
+  version: 0.1.0
+- name: reader
+  repository: file://./charts/reader
+  version: 0.1.0
+digest: sha256:e719b360f32000377a7121ddf8aa244472397f86a2a40f42dbc5deb552975ae3
+generated: "2026-06-15T13:02:55.940082+02:00"

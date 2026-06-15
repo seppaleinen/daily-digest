@@ -1,0 +1,5 @@
+# Dev specific overrides
+replicaCount: 2
+api:
+  db:
+    storageClass: standard

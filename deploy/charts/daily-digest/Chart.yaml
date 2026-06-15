@@ -1,0 +1,16 @@
+apiVersion: v2
+name: daily-digest
+description: Umbrella chart for daily-digest
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+dependencies:
+  - name: api
+    version: 0.1.0
+    repository: file://./charts/api
+  - name: spool
+    version: 0.1.0
+    repository: file://./charts/spool
+  - name: reader
+    version: 0.1.0
+    repository: file://./charts/reader

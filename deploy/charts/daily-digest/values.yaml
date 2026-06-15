@@ -1,0 +1,26 @@
+image:
+  repository: daily-digest-image
+  tag: latest
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+api:
+  image:
+    repository: api-image
+    tag: latest
+  db:
+    storageClass: nfs
+    size: 1Gi
+
+spool:
+  image:
+    repository: spool-image
+    tag: latest
+
+reader:
+  image:
+    repository: reader-image
+    tag: latest
+  ingress:
+    host: reader.daily-digest.local

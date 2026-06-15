@@ -1,0 +1,5 @@
+# Prod specific overrides
+replicaCount: 3
+api:
+  db:
+    storageClass: synology-nfs
