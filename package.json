@@ -27,5 +27,13 @@
     "turbo": "^2.4.0",
     "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^4.1.8"
+  },
+  "overrides": {
+    "esbuild": "0.28.1"
+  },
+  "pnpm": {
+    "overrides": {
+      "esbuild": "0.28.1"
+    }
   }
 }
