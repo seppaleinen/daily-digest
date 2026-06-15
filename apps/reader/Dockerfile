@@ -6,7 +6,8 @@ WORKDIR /app
 COPY pnpm-lock.yaml ./
 COPY package.json ./
 COPY apps/reader/package.json ./apps/reader/
-RUN pnpm install
+COPY packages/shared/package.json ./packages/shared/
+RUN pnpm install --filter @daily-digest/reader
 
 # Copy source code
 COPY . .
