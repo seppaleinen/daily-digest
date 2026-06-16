@@ -32,7 +32,6 @@ WORKDIR /app
 USER node
 COPY --from=prod-deps /app/node_modules ./node_modules
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
-COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 EXPOSE 3001
 CMD ["node", "apps/api/dist/index.js"]
 
