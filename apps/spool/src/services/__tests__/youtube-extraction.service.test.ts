@@ -25,9 +25,9 @@ describe("YoutubeExtractionService", () => {
     const fakeInfo = { formats: [fakeFormat] };
     const audioContent = Buffer.from("fake-audio-data");
 
-    mockYtdl.getInfo.mockResolvedValue(fakeInfo as any);
-    mockYtdl.chooseFormat.mockReturnValue(fakeFormat as any);
-    mockYtdl.downloadFromInfo.mockReturnValue(Readable.from([audioContent]));
+    (mockYtdl.getInfo as any).mockResolvedValue(fakeInfo as any);
+    (mockYtdl.chooseFormat as any).mockReturnValue(fakeFormat as any);
+    (mockYtdl.downloadFromInfo as any).mockReturnValue(Readable.from([audioContent]));
 
     const { YoutubeExtractionService } = await import("../youtube-extraction.service");
     const svc = new YoutubeExtractionService();
@@ -49,8 +49,8 @@ describe("YoutubeExtractionService", () => {
   });
 
   it("throws when chooseFormat returns falsy", async () => {
-    mockYtdl.getInfo.mockResolvedValue({ formats: [] } as any);
-    mockYtdl.chooseFormat.mockReturnValue(undefined as any);
+    (mockYtdl.getInfo as any).mockResolvedValue({ formats: [] } as any);
+    (mockYtdl.chooseFormat as any).mockReturnValue(undefined as any);
 
     const { YoutubeExtractionService } = await import("../youtube-extraction.service");
     const svc = new YoutubeExtractionService();
@@ -61,7 +61,7 @@ describe("YoutubeExtractionService", () => {
   });
 
   it("throws when getInfo fails", async () => {
-    mockYtdl.getInfo.mockRejectedValue(new Error("Video unavailable"));
+    (mockYtdl.getInfo as any).mockRejectedValue(new Error("Video unavailable"));
 
     const { YoutubeExtractionService } = await import("../youtube-extraction.service");
     const svc = new YoutubeExtractionService();
