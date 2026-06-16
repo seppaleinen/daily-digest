@@ -23,13 +23,14 @@ RUN corepack enable
 COPY pnpm-lock.yaml package.json pnpm-workspace.yaml ./
 COPY apps/spool/package.json ./apps/spool/
 COPY packages/shared/package.json ./packages/shared/
-RUN pnpm install --prod --frozen-lockfile
+RUN pnpm install --prod --frozen-lockfile --config.node-linker=hoisted
 
 # --- STAGE 5: Runner ---
 FROM node:20-alpine AS runner
 WORKDIR /app
 # node:20-alpine already has a node user with UID 1000
 USER node
+COPY --from=prod-deps /app/package.json ./
 COPY --from=prod-deps /app/node_modules ./node_modules
 COPY --from=builder /app/apps/spool/dist ./apps/spool/dist
 EXPOSE 3001

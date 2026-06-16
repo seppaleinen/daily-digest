@@ -18,10 +18,9 @@ spec:
         {{- toYaml .Values.securityContext | nindent 8 }}
       initContainers:
         - name: drizzle-migrate
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          image: "{{ .Values.image.repository }}-migrate:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: ["/bin/sh", "-c"]
-          args: ["npx drizzle-kit push"]
+          command: ["npx", "drizzle-kit", "push"]
           volumeMounts:
             - name: data
               mountPath: /app/data
