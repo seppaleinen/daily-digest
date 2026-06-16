@@ -15,7 +15,7 @@ RUN pnpm install --frozen-lockfile
 # --- STAGE 3: Builder ---
 FROM deps AS builder
 COPY . .
-RUN pnpm --filter @daily-digest/api build
+RUN pnpm --filter @daily-digest/shared build && pnpm --filter @daily-digest/api build
 
 # --- STAGE 4: Production Dependencies ---
 FROM base AS prod-deps
@@ -33,6 +33,10 @@ USER node
 COPY --from=prod-deps /app/package.json ./
 COPY --from=prod-deps /app/node_modules ./node_modules
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
+# Copy shared package into node_modules so @daily-digest/shared resolves at runtime
+# (pnpm --prod with hoisted linker doesn't create workspace symlinks)
+COPY --from=builder /app/packages/shared/package.json ./node_modules/@daily-digest/shared/
+COPY --from=builder /app/packages/shared/dist ./node_modules/@daily-digest/shared/dist
 EXPOSE 3001
 CMD ["node", "apps/api/dist/index.js"]
 

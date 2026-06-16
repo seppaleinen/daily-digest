@@ -1,0 +1,59 @@
+# ── Daily Digest Local Dev Stack ─────────────────────────────────────────
+# Start:   docker compose up --build
+# Teardown: docker compose down -v
+services:
+  # Run DB migrations once, then exit
+  api-migrate:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: migrator
+    volumes:
+      - api-data:/app/data
+    environment:
+      - DATABASE_URL=file:/app/data/digest.db
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: runner
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - DATABASE_URL=file:/app/data/digest.db
+    volumes:
+      - api-data:/app/data
+    depends_on:
+      api-migrate:
+        condition: service_completed_successfully
+
+  spool:
+    build:
+      context: .
+      dockerfile: apps/spool/Dockerfile
+      target: runner
+    ports:
+      - "3002:3001"
+    environment:
+      - PORT=3001
+      - SPOOL_DATABASE_URL=file:/app/data/spool.db
+    env_file:
+      - path: ./apps/spool/.env
+        required: false
+    depends_on:
+      - api
+
+  reader:
+    build:
+      context: .
+      dockerfile: apps/reader/Dockerfile
+      target: runner
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+
+volumes:
+  api-data:

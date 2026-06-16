@@ -1,2 +1,2 @@
-export { SOURCE, CreateItemSchema, DateSchema } from "./schemas";
-export type { Source, CreateItemInput } from "./schemas";
+export { SOURCE, CreateItemSchema, DateSchema } from "./schemas.js";
+export type { Source, CreateItemInput } from "./schemas.js";

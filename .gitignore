@@ -14,3 +14,4 @@ apps/api/*.db-shm
 apps/api/*.db-wal
 
 *.tgz
+.opencode/

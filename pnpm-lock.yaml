@@ -26,6 +26,9 @@ importers:
       '@daily-digest/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@hono/node-server':
+        specifier: ^1.13.0
+        version: 1.19.14(hono@4.12.25)
       better-sqlite3:
         specifier: 12.10.0
         version: 12.10.0
@@ -42,9 +45,6 @@ importers:
       '@daily-digest/tsconfig-base':
         specifier: workspace:*
         version: link:../../packages/tsconfig-base
-      '@hono/node-server':
-        specifier: ^1.13.0
-        version: 1.19.14(hono@4.12.25)
       '@types/better-sqlite3':
         specifier: ^7.6.13
         version: 7.6.13
@@ -130,6 +130,9 @@ importers:
       '@distube/ytdl-core':
         specifier: ^4.16.12
         version: 4.16.12
+      '@hono/node-server':
+        specifier: ^2.0.4
+        version: 2.0.4(hono@4.12.25)
       better-sqlite3:
         specifier: ^12.10.1
         version: 12.10.1
@@ -149,9 +152,6 @@ importers:
         specifier: ^3.24.0
         version: 3.25.76
     devDependencies:
-      '@hono/node-server':
-        specifier: ^2.0.4
-        version: 2.0.4(hono@4.12.25)
       '@types/better-sqlite3':
         specifier: ^7.6.13
         version: 7.6.13
