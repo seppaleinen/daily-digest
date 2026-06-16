@@ -246,7 +246,6 @@ jobs:
           CHART_VERSION="${{ needs.version.outputs.new_tag }}-${GITHUB_SHA::7}"
           helm package deploy/helm/spool \
             --version "${CHART_VERSION}" \
-            --api-version 3 \
             --destination .
           helm push spool-${CHART_VERSION}.tgz oci://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/charts
 
