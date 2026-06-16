@@ -39,7 +39,7 @@ export function createSpoolRoutes(deps?: {
     return c.json({ success: true });
   });
 
-  app.post('/transcribe', async (c) => {
+  app.post('/items', async (c) => {
     const { url, sourceType, title } = await c.req.json();
     if (!url) return c.json({ error: 'URL is required' }, 400);
 
@@ -78,8 +78,13 @@ export function createSpoolRoutes(deps?: {
     };
 
     const id = await repository.upsertItem(newItem);
-    await orchestrationService.processQueue(digestDate);
-    return c.json({ id, message: 'Transcription queued for testing', sourceType: source });
+
+    // Fire-and-forget the pipeline — n8n gets a quick response, processing runs in background
+    orchestrationService.processQueue(digestDate).catch((err) => {
+      console.error(`[Spool] Background processing failed for date ${digestDate}:`, err);
+    });
+
+    return c.json({ id, status: 'pending' });
   });
 
   return app;

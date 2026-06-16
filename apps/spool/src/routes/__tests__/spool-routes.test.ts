@@ -118,9 +118,9 @@ describe("Spool routes", () => {
     expect(items[0].sourceType).toBe("youtube");
   });
 
-  it("POST /transcribe with missing URL returns 400", async () => {
+  it("POST /items with missing URL returns 400", async () => {
     const app = createSpoolRoutes(mockDeps(repo));
-    const res = await app.request("/transcribe", {
+    const res = await app.request("/items", {
       method: "POST",
       headers: { "Content-type": "application/json" },
       body: JSON.stringify({ sourceType: "youtube" }),
@@ -128,5 +128,28 @@ describe("Spool routes", () => {
     expect(res.status).toBe(400);
     const body = await res.json() as any;
     expect(body.error).toBe("URL is required");
+  });
+
+  it("POST /items queues item and returns pending status", async () => {
+    const deps = mockDeps(repo);
+    const app = createSpoolRoutes(deps);
+    const res = await app.request("/items", {
+      method: "POST",
+      headers: { "Content-type": "application/json" },
+      body: JSON.stringify({ url: "https://youtube.com/watch?v=abc123", title: "Test Video" }),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json() as any;
+    expect(body.id).toBeDefined();
+    expect(body.status).toBe("pending");
+
+    // Verify it was queued in the DB
+    const items = await repo.getAllItems();
+    expect(items.length).toBe(1);
+    expect(items[0].sourceUrl).toBe("https://youtube.com/watch?v=abc123");
+    expect(items[0].title).toBe("Test Video");
+
+    // Verify orchestration was triggered (fire-and-forget)
+    expect(deps.orchestrationService.processQueue).toHaveBeenCalledOnce();
   });
 });

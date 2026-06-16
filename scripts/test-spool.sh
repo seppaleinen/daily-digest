@@ -28,7 +28,7 @@ if [[ -n "$TITLE" ]]; then
 else
   JSON_BODY=$(jq -n --arg url "$TARGET_URL" '{url: $url}')
 fi
-RESPONSE=$(curl -s -X POST "$API_BASE_URL/transcribe" \
+RESPONSE=$(curl -s -X POST "$API_BASE_URL/items" \
   -H "Content-Type: application/json" \
   -d "$JSON_BODY")
 
@@ -65,7 +65,7 @@ while [ $COUNT -lt $MAX_RETRIES ]; do
 
   if [[ -z "$STATUS" ]]; then
     echo "⚠️ Task ID $ID not found in queue yet. Retrying..."
-  elif [[ "$STATUS" == "completed" ]]; then
+  elif [[ "$STATUS" == "done" ]]; then
     echo "🎉 SUCCESS: Transcription completed!"
     echo "Final details:"
     echo $STATUS_JSON | jq ".[] | select(.id == \"$ID\")"
