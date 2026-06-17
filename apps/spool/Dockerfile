@@ -28,10 +28,9 @@ RUN pnpm install --prod --frozen-lockfile --config.node-linker=hoisted
 # --- STAGE 5: Runner ---
 FROM node:20-alpine AS runner
 WORKDIR /app
-# node:20-alpine already has a node user with UID 1000
 USER node
 COPY --from=prod-deps /app/package.json ./
 COPY --from=prod-deps /app/node_modules ./node_modules
-COPY --from=builder /app/apps/spool/dist ./apps/spool/dist
+COPY apps/spool ./apps/spool
 EXPOSE 3001
-CMD ["node", "apps/spool/dist/index.js"]
+CMD ["npx", "tsx", "apps/spool/src/index.ts"]

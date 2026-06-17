@@ -1,6 +1,6 @@
 import { SummarizationResponse } from '../types';
-import { config } from '../config';
 
+import { config } from '../config';
 export class SummarizationService {
   private readonly baseUrl: string;
   private readonly model: string;

@@ -9,7 +9,6 @@ FROM base AS deps
 COPY pnpm-lock.yaml package.json pnpm-workspace.yaml ./
 COPY apps/api/package.json ./apps/api/
 COPY packages/shared/package.json ./packages/shared/
-# CRITICAL: Do NOT use --ignore-scripts; better-sqlite3 requires native compilation
 RUN pnpm install --frozen-lockfile
 
 # --- STAGE 3: Builder ---
@@ -28,17 +27,13 @@ RUN pnpm install --prod --frozen-lockfile --config.node-linker=hoisted
 # --- STAGE 5: Runner ---
 FROM node:20-alpine AS runner
 WORKDIR /app
-# node:20-alpine already has a node user with UID 1000
 USER node
 COPY --from=prod-deps /app/package.json ./
 COPY --from=prod-deps /app/node_modules ./node_modules
-COPY --from=builder /app/apps/api/dist ./apps/api/dist
-# Copy shared package into node_modules so @daily-digest/shared resolves at runtime
-# (pnpm --prod with hoisted linker doesn't create workspace symlinks)
-COPY --from=builder /app/packages/shared/package.json ./node_modules/@daily-digest/shared/
-COPY --from=builder /app/packages/shared/dist ./node_modules/@daily-digest/shared/dist
+COPY apps/api ./apps/api
+COPY packages/shared ./packages/shared
 EXPOSE 3001
-CMD ["node", "apps/api/dist/index.js"]
+CMD ["npx", "tsx", "apps/api/src/index.ts"]
 
 # --- STAGE: Migrator (K8s initContainer) ---
 FROM builder AS migrator
