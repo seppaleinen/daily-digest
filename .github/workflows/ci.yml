@@ -95,7 +95,7 @@ jobs:
         if: ${{ matrix.service == 'api' || matrix.service == 'spool' }}
         run: >
           docker run --rm daily-digest-${{ matrix.service }}:test
-          npx tsx -e "console.log('OK: shared exports', Object.keys(await import('@daily-digest/shared')))"
+          npx tsx -e "import('@daily-digest/shared').then(m => console.log('OK: shared exports', Object.keys(m)))"
 
       - name: Verify native module compilation
         if: ${{ matrix.service == 'api' || matrix.service == 'spool' }}

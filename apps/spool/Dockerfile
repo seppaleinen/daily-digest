@@ -1,7 +1,6 @@
 # --- STAGE 1: Base (Build Essentials) ---
 FROM node:20-alpine AS base
-RUN apk add --no-cache python3 make g++
-RUN corepack enable
+RUN apk add --no-cache python3 make g++ && corepack enable
 WORKDIR /app
 
 # --- STAGE 2: Dependencies ---
