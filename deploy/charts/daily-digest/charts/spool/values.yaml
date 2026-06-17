@@ -16,8 +16,10 @@ ingress:
     - name: authentik-auth
 
 config:
-  whisperUrl: "http://whisper-service.default.svc.cluster.local"
-  summarizerUrl: "http://summarizer-service.default.svc.cluster.local"
+  inference:
+    providerUrl: "http://whisper-service.default.svc.cluster.local"
+    whisperModel: "whisper-base"
+    summarizationModel: "mistral"
   digestApiUrl: "http://digest-api.default.svc.cluster.local"
 
 secrets:

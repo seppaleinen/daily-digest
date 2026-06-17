@@ -4,6 +4,7 @@ metadata:
   name: spool-config
   namespace: default
 data:
-  WHISPER_URL: "http://whisper-service.default.svc.cluster.local"
-  SUMMARIZER_URL: "http://summarizer-service.default.svc.cluster.local"
+  INFERENCE_PROVIDER_URL: "http://whisper-service.default.svc.cluster.local"
+  WHISPER_MODEL: "whisper-base"
+  SUMMARIZATION_MODEL: "mistral"
   DIGEST_API_URL: "http://digest-api.default.svc.cluster.local"

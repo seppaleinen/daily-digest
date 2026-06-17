@@ -34,6 +34,8 @@ COPY --from=prod-deps /app/package.json ./
 COPY --from=prod-deps /app/node_modules ./node_modules
 COPY apps/api ./apps/api
 COPY packages/shared ./packages/shared
+# pnpm hoisted linker skips workspace symlinks with --prod; create manually
+RUN mkdir -p node_modules/@daily-digest && ln -s /app/packages/shared node_modules/@daily-digest/shared
 EXPOSE 3001
 CMD ["npx", "tsx", "apps/api/src/index.ts"]
 

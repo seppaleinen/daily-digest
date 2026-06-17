@@ -5,8 +5,9 @@ metadata:
   labels:
     {{- include "spool.labels" . | nindent 4 }}
 data:
-  WHISPER_URL: {{ .Values.config.whisperUrl | quote }}
-  SUMMARIZER_URL: {{ .Values.config.summarizerUrl | quote }}
+  INFERENCE_PROVIDER_URL: {{ .Values.config.inference.providerUrl | quote }}
+  WHISPER_MODEL: {{ .Values.config.inference.whisperModel | quote }}
+  SUMMARIZATION_MODEL: {{ .Values.config.inference.summarizationModel | quote }}
   DIGEST_API_URL: {{ .Values.config.digestApiUrl | quote }}
   SPOOL_CONFIG_YAML: |
     # This is a placeholder for the actual config file if needed

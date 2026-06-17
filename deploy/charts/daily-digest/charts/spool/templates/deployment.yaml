@@ -27,16 +27,21 @@ spec:
           env:
             - name: SPOOL_CONFIG_PATH
               value: /config/spool-config.yaml
-            - name: WHISPER_URL
+            - name: INFERENCE_PROVIDER_URL
               valueFrom:
                 configMapKeyRef:
                   name: {{ include "spool.fullname" . }}-config
-                  key: WHISPER_URL
-            - name: SUMMARIZER_URL
+                  key: INFERENCE_PROVIDER_URL
+            - name: WHISPER_MODEL
               valueFrom:
                 configMapKeyRef:
                   name: {{ include "spool.fullname" . }}-config
-                  key: SUMMARIZER_URL
+                  key: WHISPER_MODEL
+            - name: SUMMARIZATION_MODEL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "spool.fullname" . }}-config
+                  key: SUMMARIZATION_MODEL
             - name: DIGEST_API_URL
               valueFrom:
                 configMapKeyRef:
