@@ -109,7 +109,7 @@ jobs:
         if: ${{ matrix.service == 'reader' }}
         run: >
           docker run --rm --user root daily-digest-reader:test
-          sh -c "API_URL=http://test:3000 envsubst '\${API_URL}' < /etc/nginx/templates/nginx.conf.template > /etc/nginx/conf.d/default.conf && nginx -t"
+          sh -c "API_URL=http://127.0.0.1:3000 envsubst '\${API_URL}' < /etc/nginx/templates/nginx.conf.template > /etc/nginx/conf.d/default.conf && nginx -t"
 
       - name: Verify app starts without crash
         if: ${{ matrix.service == 'api' }}
