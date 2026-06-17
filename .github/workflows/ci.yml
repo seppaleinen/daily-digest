@@ -92,19 +92,23 @@ jobs:
           tags: daily-digest-migrate:test
 
       - name: Verify workspace dependency resolution
-        if: matrix.service == 'api' || matrix.service == 'spool'
-        run: docker run --rm daily-digest-${{ matrix.service }}:test npx tsx -e "console.log('OK: shared exports', Object.keys(await import('@daily-digest/shared')))"
+        if: ${{ matrix.service == 'api' || matrix.service == 'spool' }}
+        run: >
+          docker run --rm daily-digest-${{ matrix.service }}:test
+          npx tsx -e "console.log('OK: shared exports', Object.keys(await import('@daily-digest/shared')))"
 
       - name: Verify native module compilation
-        if: matrix.service == 'api' || matrix.service == 'spool'
-        run: docker run --rm daily-digest-${{ matrix.service }}:test node -e "require('better-sqlite3')"
+        if: ${{ matrix.service == 'api' || matrix.service == 'spool' }}
+        run: >
+          docker run --rm daily-digest-${{ matrix.service }}:test
+          node -e "require('better-sqlite3')"
 
       - name: Verify nginx config (reader)
-        if: matrix.service == 'reader'
+        if: ${{ matrix.service == 'reader' }}
         run: docker run --rm daily-digest-reader:test nginx -t
 
       - name: Verify app starts without crash
-        if: matrix.service == 'api'
+        if: ${{ matrix.service == 'api' }}
         run: |
           docker run -d \
             -e PORT=3001 \
