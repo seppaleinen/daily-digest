@@ -43,15 +43,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: hadolint/hadolint-action@v3
+      - uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: apps/api/Dockerfile
 
-      - uses: hadolint/hadolint-action@v3
+      - uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: apps/spool/Dockerfile
 
-      - uses: hadolint/hadolint-action@v3
+      - uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: apps/reader/Dockerfile
 
@@ -93,7 +93,7 @@ jobs:
 
       - name: Verify workspace dependency resolution
         if: matrix.service == 'api' || matrix.service == 'spool'
-        run: docker run --rm daily-digest-${{ matrix.service }}:test node -e "require('@daily-digest/shared')"
+        run: docker run --rm daily-digest-${{ matrix.service }}:test npx tsx -e "console.log('OK: shared exports', Object.keys(await import('@daily-digest/shared')))"
 
       - name: Verify native module compilation
         if: matrix.service == 'api' || matrix.service == 'spool'
