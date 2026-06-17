@@ -20,6 +20,7 @@ RUN mkdir -p /var/cache/nginx /var/run && \
     chown -R 1000:1000 /var/cache/nginx /var/run && \
     touch /var/run/nginx.pid && \
     chown 1000:1000 /var/run/nginx.pid && \
+    rm -f /etc/nginx/conf.d/default.conf && \
     mkdir -p /etc/nginx/templates /etc/nginx/conf.d && \
     chown 1000:1000 /etc/nginx/templates /etc/nginx/conf.d
 WORKDIR /usr/share/nginx/html
