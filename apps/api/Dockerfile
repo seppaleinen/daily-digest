@@ -22,6 +22,8 @@ RUN corepack enable
 COPY pnpm-lock.yaml package.json pnpm-workspace.yaml ./
 COPY apps/api/package.json ./apps/api/
 COPY packages/shared/package.json ./packages/shared/
+# Copy workspace package source so pnpm symlinks resolve to complete packages
+COPY packages/shared/src ./packages/shared/src
 RUN pnpm install --prod --frozen-lockfile --config.node-linker=hoisted
 
 # --- STAGE 5: Runner ---

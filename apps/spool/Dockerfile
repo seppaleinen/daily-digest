@@ -27,6 +27,7 @@ RUN pnpm install --prod --frozen-lockfile --config.node-linker=hoisted
 
 # --- STAGE 5: Runner ---
 FROM node:20-alpine AS runner
+RUN mkdir -p /data && chown node:node /data
 WORKDIR /app
 USER node
 COPY --from=prod-deps /app/package.json ./
