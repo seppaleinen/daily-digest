@@ -35,3 +35,82 @@ jobs:
 
       - name: Test
         run: pnpm test
+
+  # ── Lint Dockerfiles with Hadolint ──────────────────────────────────────────
+  dockerfile-lint:
+    name: Dockerfile lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hadolint/hadolint-action@v3
+        with:
+          dockerfile: apps/api/Dockerfile
+
+      - uses: hadolint/hadolint-action@v3
+        with:
+          dockerfile: apps/spool/Dockerfile
+
+      - uses: hadolint/hadolint-action@v3
+        with:
+          dockerfile: apps/reader/Dockerfile
+
+  # ── Build and smoke-test Docker images (single-platform, no push) ───────────
+  docker-smoke:
+    name: Docker smoke (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [api, spool, reader]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build ${{ matrix.service }} runner image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/${{ matrix.service }}/Dockerfile
+          target: runner
+          push: false
+          load: true
+          tags: daily-digest-${{ matrix.service }}:test
+
+      - name: Build migrator image (API only)
+        if: matrix.service == 'api'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          target: migrator
+          push: false
+          load: true
+          tags: daily-digest-migrate:test
+
+      - name: Verify workspace dependency resolution
+        if: matrix.service == 'api' || matrix.service == 'spool'
+        run: docker run --rm daily-digest-${{ matrix.service }}:test node -e "require('@daily-digest/shared')"
+
+      - name: Verify native module compilation
+        if: matrix.service == 'api' || matrix.service == 'spool'
+        run: docker run --rm daily-digest-${{ matrix.service }}:test node -e "require('better-sqlite3')"
+
+      - name: Verify nginx config (reader)
+        if: matrix.service == 'reader'
+        run: docker run --rm daily-digest-reader:test nginx -t
+
+      - name: Verify app starts without crash
+        if: matrix.service == 'api'
+        run: |
+          docker run -d \
+            -e PORT=3001 \
+            -e DATABASE_URL=file:/tmp/test.db \
+            --name smoke-api \
+            daily-digest-api:test
+          sleep 3
+          docker logs smoke-api 2>&1 | head -10
+          docker stop smoke-api && docker rm smoke-api
