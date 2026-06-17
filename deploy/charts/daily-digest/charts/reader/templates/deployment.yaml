@@ -24,3 +24,6 @@ spec:
             - name: http
               containerPort: 80
               protocol: TCP
+          env:
+            - name: API_URL
+              value: {{ .Values.config.apiUrl | quote }}

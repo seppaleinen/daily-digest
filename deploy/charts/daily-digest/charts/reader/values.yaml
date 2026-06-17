@@ -3,6 +3,9 @@ image:
   tag: latest
   pullPolicy: IfNotPresent
 
+config:
+  apiUrl: http://daily-digest-api.daily-digest.svc.cluster.local:3000
+
 service:
   type: ClusterIP
   port: 80

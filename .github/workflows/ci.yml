@@ -79,6 +79,8 @@ jobs:
           push: false
           load: true
           tags: daily-digest-${{ matrix.service }}:test
+          build-args: |
+            VITE_API_BASE=/api
 
       - name: Build migrator image (API only)
         if: matrix.service == 'api'
@@ -105,7 +107,9 @@ jobs:
 
       - name: Verify nginx config (reader)
         if: ${{ matrix.service == 'reader' }}
-        run: docker run --rm daily-digest-reader:test nginx -t
+        run: >
+          docker run --rm daily-digest-reader:test
+          sh -c "API_URL=http://test:3000 envsubst '\${API_URL}' < /etc/nginx/templates/nginx.conf.template > /etc/nginx/conf.d/default.conf && nginx -t"
 
       - name: Verify app starts without crash
         if: ${{ matrix.service == 'api' }}
