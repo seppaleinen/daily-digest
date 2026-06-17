@@ -31,6 +31,8 @@ WORKDIR /app
 COPY --from=prod-deps /app/package.json ./
 COPY --from=prod-deps /app/node_modules ./node_modules
 COPY apps/spool ./apps/spool
+# packages/shared must be copied for the workspace symlink target
+COPY packages/shared ./packages/shared
 # pnpm hoisted linker skips workspace symlinks with --prod; create manually
 RUN mkdir -p node_modules/@daily-digest && ln -sf /app/packages/shared node_modules/@daily-digest/shared
 USER node
