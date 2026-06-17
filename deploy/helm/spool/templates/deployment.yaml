@@ -23,6 +23,7 @@ spec:
       {{- with .Values.securityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}
+      {{- end }}
       initContainers:
         - name: migrator
           image: "{{ .Values.image.repository }}-migrate:{{ .Values.image.tag }}"
@@ -31,7 +32,7 @@ spec:
           volumeMounts:
             - name: spool-data
               mountPath: /app/data
-
+      containers:
         - name: {{ .Chart.Name }}
           image: {{ include "spool.image" . | quote }}
           ports:
@@ -79,6 +80,7 @@ spec:
           configMap:
             name: {{ include "spool.fullname" . }}-config
         - name: spool-tmp
+          emptyDir: {}
         - name: spool-data
           persistentVolumeClaim:
             claimName: {{ include "spool.fullname" . }}-data
