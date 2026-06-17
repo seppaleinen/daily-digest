@@ -35,6 +35,13 @@ securityContext:
   runAsUser: 1000
   runAsGroup: 1000
 
+# Volume persistence for SQLite
+persistence:
+  enabled: true
+  accessMode: ReadWriteOnce
+  size: 1Gi
+  storageClass: ""
+
 # Volume mounts
 resources:
   limits:

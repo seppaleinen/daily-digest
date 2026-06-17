@@ -38,3 +38,8 @@ RUN mkdir -p node_modules/@daily-digest && ln -sf /app/packages/shared node_modu
 USER node
 EXPOSE 3001
 CMD ["npx", "tsx", "apps/spool/src/index.ts"]
+
+# --- STAGE: Migrator (K8s initContainer) ---
+FROM builder AS migrator
+WORKDIR /app/apps/spool
+CMD ["npx", "drizzle-kit", "push"]

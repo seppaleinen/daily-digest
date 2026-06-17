@@ -23,8 +23,15 @@ spec:
       {{- with .Values.securityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}
-      {{- end }}
-      containers:
+      initContainers:
+        - name: migrator
+          image: "{{ .Values.image.repository }}-migrate:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["npx", "drizzle-kit", "push"]
+          volumeMounts:
+            - name: spool-data
+              mountPath: /app/data
+
         - name: {{ .Chart.Name }}
           image: {{ include "spool.image" . | quote }}
           ports:
@@ -65,12 +72,13 @@ spec:
             - name: config-volume
               mountPath: {{ .Values.config.spoolConfigDir }}
               readOnly: true
-            - name: spool-tmp
-              mountPath: /tmp/spool
+            - name: spool-data
+              mountPath: /app/data
       volumes:
         - name: config-volume
           configMap:
             name: {{ include "spool.fullname" . }}-config
         - name: spool-tmp
-          emptyDir:
-            medium: Memory
+        - name: spool-data
+          persistentVolumeClaim:
+            claimName: {{ include "spool.fullname" . }}-data

@@ -25,7 +25,11 @@ config:
 secrets:
   youtubeApiKey: ""
 
-replicaCount: 1
+persistence:
+  enabled: true
+  accessMode: ReadWriteOnce
+  size: 1Gi
+  storageClass: ""
 
 resources:
   limits:

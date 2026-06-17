@@ -16,6 +16,14 @@ spec:
     spec:
       securityContext:
         {{- toYaml .Values.securityContext | nindent 8 }}
+      initContainers:
+        - name: migrator
+          image: "{{ .Values.image.repository }}-migrate:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["npx", "drizzle-kit", "push"]
+          volumeMounts:
+            - name: spool-data
+              mountPath: /app/data
       containers:
         - name: spool
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -57,6 +65,11 @@ spec:
           volumeMounts:
             - name: tmp
               mountPath: /tmp/spool
+            - name: spool-data
+              mountPath: /app/data
       volumes:
         - name: tmp
           emptyDir: {}
+        - name: spool-data
+          persistentVolumeClaim:
+            claimName: {{ include "spool.fullname" . }}-data
