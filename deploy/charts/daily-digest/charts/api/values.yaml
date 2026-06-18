@@ -4,8 +4,13 @@ image:
   pullPolicy: IfNotPresent
 
 db:
+  path: /app/data/daily-digest.db
   storageClass: ""
   size: 1Gi
+
+inference:
+  providerUrl: http://litellm.litellm.svc.cluster.local:4000
+  summarizationModel: huggingface/llama-3.2-3b-instruct
 
 service:
   port: 80

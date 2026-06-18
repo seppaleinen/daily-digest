@@ -2,10 +2,29 @@ import { Context, Hono } from "hono";
 import { eq, and } from "drizzle-orm";
 import { digestItems } from "../db/schema";
 import { DateSchema, CreateItemSchema } from "@daily-digest/shared";
+import { InferenceService } from "../services/inference";
 
 export type Source = typeof digestItems.source;
 
-export function createDigestHandler(db: any) {
+export function createDigestHandler(db: any, inferenceService?: InferenceService) {
+  const inf = inferenceService ?? new InferenceService();
+
+  const summarizeItem = async (item: typeof digestItems.$inferInsert, prompt?: string) => {
+    if (!inf.isAvailable) {
+      console.warn("Summarization requested but inference service not configured");
+      return;
+    }
+    try {
+      const summary = await inf.summarize(item.html, prompt);
+      await db
+        .update(digestItems)
+        .set({ summary, summarize: true, summaryPrompt: prompt ?? null })
+        .where(eq(digestItems.id, item.id));
+    } catch (err) {
+      console.error("Summarization failed for item", item.id, err);
+    }
+  };
+
   return {
     upsertItem: async (c: Context) => {
       const dateParam = c.req.param("date");
@@ -45,22 +64,32 @@ export function createDigestHandler(db: any) {
         )
         .limit(1);
 
+      let result: any;
       if (existing.length > 0) {
-        const updated = await db
+        result = await db
           .update(digestItems)
           .set({
             source: item.source,
             title: item.title,
             html: item.html,
             sourceUrl: item.sourceUrl,
+            summarize: item.summarize,
+            summaryPrompt: item.summaryPrompt ?? null,
           })
           .where(eq(digestItems.id, existing[0].id))
           .returning();
-        return c.json(updated[0], 201);
+        result = result[0];
+      } else {
+        result = await db.insert(digestItems).values(item).returning();
+        result = result[0];
       }
 
-      const inserted = await db.insert(digestItems).values(item).returning();
-      return c.json(inserted[0], 201);
+      // Async summarization — fire and forget
+      if (item.summarize) {
+        setImmediate(() => summarizeItem(result, item.summaryPrompt));
+      }
+
+      return c.json(result, 201);
     },
     listDates: async (c: Context) => {
       const rows = await db.select({ date: digestItems.date }).from(digestItems).groupBy(digestItems.date).orderBy(digestItems.date);
@@ -88,6 +117,49 @@ export function createDigestHandler(db: any) {
         .orderBy(digestItems.createdAt);
   
       return c.json(rows);
+    },
+    summarizeItem: async (c: Context) => {
+      const dateParam = c.req.param("date");
+      const idParam = c.req.param("id");
+      const body = await c.req.json().catch(() => ({ "__error__": "invalid_json" }));
+
+      if (body.__error__) {
+        return c.json({ error: "Invalid JSON" }, 400);
+      }
+
+      const id = parseInt(idParam, 10);
+      if (isNaN(id)) {
+        return c.json({ error: "Invalid item ID" }, 400);
+      }
+
+      const items = await db
+        .select()
+        .from(digestItems)
+        .where(and(eq(digestItems.id, id), eq(digestItems.date, dateParam)))
+        .limit(1);
+
+      if (items.length === 0) {
+        return c.json({ error: "Item not found" }, 404);
+      }
+
+      const item = items[0];
+
+      if (!inf.isAvailable) {
+        return c.json({ error: "Inference service not configured" }, 503);
+      }
+
+      try {
+        const prompt = body.prompt || item.summaryPrompt || undefined;
+        const summary = await inf.summarize(item.html, prompt);
+        await db
+          .update(digestItems)
+          .set({ summary, summarize: true, summaryPrompt: prompt ?? null })
+          .where(eq(digestItems.id, id));
+
+        return c.json({ id: item.id, summary, summarize: true });
+      } catch (err: any) {
+        return c.json({ error: "Summarization failed", details: err.message }, 500);
+      }
     },
   };
 }

@@ -10,6 +10,9 @@ export const digestItems = sqliteTable("digest_items", {
   title: text("title").notNull(),
   html: text("html").notNull(),
   sourceUrl: text("source_url").notNull(),
+  summary: text("summary"),
+  summarize: integer("summarize", { mode: "boolean" }).notNull().default(false),
+  summaryPrompt: text("summary_prompt"),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).default(
     sql`CURRENT_TIMESTAMP`
   ).notNull(),

@@ -34,6 +34,19 @@ spec:
               protocol: TCP
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          env:
+            - name: DATABASE_URL
+              value: {{ .Values.db.path | quote }}
+            - name: INFERENCE_PROVIDER_URL
+              value: {{ .Values.inference.providerUrl | quote }}
+            - name: SUMMARIZATION_MODEL
+              value: {{ .Values.inference.summarizationModel | quote }}
+            - name: INFERENCE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "api.fullname" . }}-secrets
+                  key: INFERENCE_API_KEY
+                  optional: true
           volumeMounts:
             - name: data
               mountPath: /app/data

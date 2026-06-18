@@ -1,13 +1,15 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import './App.css'
 
 interface DigestItem {
-  id: string;
+  id: number;
   date: string;
   title: string;
   html: string;
   source: string;
   sourceUrl: string;
+  summary: string | null;
+  summarize: boolean;
   createdAt: string;
 }
 
@@ -16,16 +18,9 @@ function App() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [items, setItems] = useState<DigestItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
-
-  const toggleItem = (id: string) => {
-    setExpanded(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
+  const [expanded, setExpanded] = useState<Set<number>>(new Set());
+  const [summarizing, setSummarizing] = useState<Set<number>>(new Set());
+  const [prompts, setPrompts] = useState<Record<number, string>>({});
 
   const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3000";
 
@@ -50,6 +45,26 @@ function App() {
     }
   }
 
+  const handleSummarize = useCallback(async (item: DigestItem) => {
+    setSummarizing(prev => new Set(prev).add(item.id));
+    try {
+      const prompt = prompts[item.id] || undefined;
+      const res = await fetch(`${API_BASE}/digest/${item.date}/items/${item.id}/summarize`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt }),
+      });
+      if (!res.ok) throw new Error("Summarization failed");
+      const data = await res.json();
+      setItems(prev => prev.map(i => i.id === item.id ? { ...i, summary: data.summary, summarize: true } : i));
+      setPrompts(prev => { const next = { ...prev }; delete next[item.id]; return next; });
+    } catch (err) {
+      console.error("Summarization error:", err);
+    } finally {
+      setSummarizing(prev => { const next = new Set(prev); next.delete(item.id); return next; });
+    }
+  }, [API_BASE, prompts]);
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-8">
@@ -66,7 +81,7 @@ function App() {
                 <button
                   key={date}
                   onClick={() => fetchItems(date)}
-                  className={`text-left px-4 py_2 rounded-lg transition-all ${
+                  className={`text-left px-4 py-2 rounded-lg transition-all ${
                     selectedDate === date 
                       ? 'bg-blue-600 text-white shadow-md' 
                       : 'hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
@@ -89,7 +104,12 @@ function App() {
                     return (
                       <section key={item.id} className="space-y-4">
                         <button
-                          onClick={() => toggleItem(item.id)}
+                          onClick={() => setExpanded(prev => {
+                            const next = new Set(prev);
+                            if (next.has(item.id)) next.delete(item.id);
+                            else next.add(item.id);
+                            return next;
+                          })}
                           className="w-full text-left flex items-center gap-3 group"
                         >
                           <span className={`text-sm font-mono transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`}>
@@ -101,13 +121,44 @@ function App() {
                         </button>
                         {isOpen && (
                           <div className="pl-7 space-y-4">
+                            {item.summary && (
+                              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                                <h4 className="text-sm font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-2">Summary</h4>
+                                <div
+                                  className="prose dark:prose-invert max-w-none text-sm"
+                                  dangerouslySetInnerHTML={{ __html: item.summary }}
+                                />
+                              </div>
+                            )}
                             <div
                               className="prose dark:prose-invert max-w-none"
                               dangerouslySetInnerHTML={{ __html: item.html }}
                             />
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                              for more details, <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">click on this link</a>
-                            </p>
+                            <div className="flex items-center gap-3 text-sm">
+                              <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                                View original
+                              </a>
+                              {!summarizing.has(item.id) && !item.summary && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleSummarize(item); }}
+                                  className="text-gray-500 hover:text-blue-600 underline"
+                                >
+                                  Summarize
+                                </button>
+                              )}
+                            </div>
+                            {!item.summary && (
+                              <textarea
+                                placeholder="Custom prompt (optional)"
+                                value={prompts[item.id] || ""}
+                                onChange={(e) => setPrompts(prev => ({ ...prev, [item.id]: e.target.value }))}
+                                rows={2}
+                                className="w-full text-sm border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                              />
+                            )}
+                            {summarizing.has(item.id) && (
+                              <p className="text-sm text-gray-500">Generating summary...</p>
+                            )}
                           </div>
                         )}
                       </section>

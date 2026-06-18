@@ -11,6 +11,16 @@ export const CreateItemSchema = z.object({
   title: z.string().min(1).max(500),
   html: z.string(),
   sourceUrl: z.string(),
+  summarize: z.boolean().default(false),
+  summaryPrompt: z.string().optional(),
 });
 
 export type CreateItemInput = z.infer<typeof CreateItemSchema>;
+
+export const DigestItemSchema = CreateItemSchema.extend({
+  id: z.number(),
+  summary: z.string().nullable().optional(),
+  createdAt: z.number(),
+});
+
+export type DigestItem = z.infer<typeof DigestItemSchema>;
