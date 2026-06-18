@@ -14,18 +14,21 @@ import * as apiSchema from "../../../api/src/db/schema";
 import * as spoolSchema from "../db/schema";
 
 // ─── DDL from TypeScript schemas ───────────────────────────
-const API_DDL = `
-CREATE TABLE IF NOT EXISTS digest_items (
-  id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-  date text NOT NULL,
-  category text DEFAULT 'general' NOT NULL,
-  source text NOT NULL,
-  title text NOT NULL,
-  html text NOT NULL,
-  source_url text NOT NULL,
-  created_at integer DEFAULT CURRENT_TIMESTAMP NOT NULL
-);
-`;
+  const API_DDL = `
+  CREATE TABLE IF NOT EXISTS digest_items (
+    id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+    date text NOT NULL,
+    category text DEFAULT 'general' NOT NULL,
+    source text NOT NULL,
+    title text NOT NULL,
+    html text NOT NULL,
+    source_url text NOT NULL,
+    summary text,
+    summarize integer NOT NULL DEFAULT 0,
+    summary_prompt text,
+    created_at integer NOT NULL
+  );
+  `;
 
 const SPOOL_DDL = `
 CREATE TABLE IF NOT EXISTS spool_items (
