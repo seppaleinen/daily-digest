@@ -19,7 +19,7 @@ export function createDigestHandler(db: any, inferenceService?: InferenceService
       await db
         .update(digestItems)
         .set({ summary, summarize: true, summaryPrompt: prompt ?? null })
-        .where(eq(digestItems.id, item.id));
+        .where(eq(digestItems.id, item.id!));
     } catch (err) {
       console.error("Summarization failed for item", item.id, err);
     }
@@ -127,7 +127,7 @@ export function createDigestHandler(db: any, inferenceService?: InferenceService
         return c.json({ error: "Invalid JSON" }, 400);
       }
 
-      const id = parseInt(idParam, 10);
+      const id = parseInt(idParam ?? "", 10);
       if (isNaN(id)) {
         return c.json({ error: "Invalid item ID" }, 400);
       }
@@ -135,7 +135,7 @@ export function createDigestHandler(db: any, inferenceService?: InferenceService
       const items = await db
         .select()
         .from(digestItems)
-        .where(and(eq(digestItems.id, id), eq(digestItems.date, dateParam)))
+        .where(and(eq(digestItems.id, id), eq(digestItems.date, dateParam!)))
         .limit(1);
 
       if (items.length === 0) {
