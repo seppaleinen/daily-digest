@@ -23,4 +23,37 @@ export class YoutubeExtractionService {
       );
     }
   }
+
+  async getCaptions(url: string): Promise<string | null> {
+    try {
+      const info = await ytdl.getInfo(url);
+      // @ts-ignore - ytdl-core types might be missing the playerCaptionsTracklistRenderer
+      const captionTracks = info.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+
+      if (!captionTracks || captionTracks.length === 0) {
+        return null;
+      }
+
+      // Try to find an English track (either manual or auto-generated)
+      const englishTrack = captionTracks.find(
+        (track: any) => track.languageCode === 'en' || track.languageCode.startsWith('en-')
+      );
+      
+      const track = englishTrack || captionTracks[0];
+
+      if (!track || !track.baseUrl) {
+        return null;
+      }
+
+      const response = await fetch(track.baseUrl);
+      if (!response.ok) {
+        return null;
+      }
+
+      return await response.text();
+    } catch (error) {
+      console.error(`[YoutubeExtractionService] Failed to get captions: ${error}`);
+      return null;
+    }
+  }
 }

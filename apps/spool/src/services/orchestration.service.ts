@@ -60,14 +60,22 @@ export class OrchestrationService {
       let transcript: string;
 
       if (item.sourceType === "youtube") {
-        console.log(`[Orchestration] Step 1/3: Extracting YouTube audio...`);
-        await this.youtubeExtraction.extractAudio(item.sourceUrl, audioPath);
-        console.log(`[Orchestration] Step 2/3: Transcribing...`);
-        transcript = await this.transcription.transcribe(audioPath);
+        console.log(`[Orchestration] Step 1/3: Checking for YouTube captions...`);
+        const captions = await this.youtubeExtraction.getCaptions(item.sourceUrl);
+        
+        if (captions) {
+          console.log(`[Orchestration] Step 2/3: Using captions...`);
+          transcript = await this.transcription.transcribeText(captions);
+        } else {
+          console.log(`[Orchestration] No captions found. Proceeding with audio extraction...`);
+          await this.youtubeExtraction.extractAudio(item.sourceUrl, audioPath);
+          console.log(`[Orchestration] Step 2/3: Transcribing audio...`);
+          transcript = await this.transcription.transcribe(audioPath);
+        }
       } else {
-        console.log(`[Orchestration] Step 1/3: Downloading podcast audio...`);
+        console.log(`[Orchestration] Step 1/3: Downloading audio...`);
         await this.audioExtraction.downloadAudio(item.sourceUrl, audioPath);
-        console.log(`[Orchestration] Step 2/3: Transcribing...`);
+        console.log(`[Orchestration] Step 2/3: Transcribing audio...`);
         transcript = await this.transcription.transcribe(audioPath);
       }
 

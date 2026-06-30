@@ -51,4 +51,15 @@ export class TranscriptionService {
     const data = await response.json() as { text: string };
     return data.text;
   }
+
+  async transcribeText(text: string): Promise<string> {
+    // Simple cleaning: remove common VTT/XML tags if present
+    let cleanedText = text;
+    if (text.includes('WEBVTT')) {
+       cleanedText = text.replace(/<[^>]*>/g, '\n');
+       // Further cleaning for VTT timestamp lines (e.g., 0:00:00.000 --> 0:00:01.000)
+       cleanedText = cleanedText.replace(/\d{2}:\d{2}:\d{2}\.\d{3} --> \d{2}:\d{2}:\d{2}\.\d{3}/g, '');
+    }
+    return cleanedText.trim();
+  }
 }
