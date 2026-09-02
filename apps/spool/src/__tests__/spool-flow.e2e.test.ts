@@ -57,12 +57,14 @@ let apiSqlite: Database;
 
 // ─── Mock services ─────────────────────────────────────────
 const mockYoutubeExtraction = {
+  getCaptions: vi.fn<[string], Promise<string | null>>(),
   extractAudio: vi.fn<[string, string], Promise<void>>(),
 };
 const mockAudioExtraction = {
   downloadAudio: vi.fn<[string, string], Promise<void>>(),
 };
 const mockTranscription = {
+  transcribeText: vi.fn<[string], Promise<string>>(),
   transcribe: vi.fn<[string], Promise<string>>(),
 };
 const mockSummarization = {
@@ -172,8 +174,10 @@ describe("spool → API integration", () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
+    mockYoutubeExtraction.getCaptions.mockResolvedValue(null);
     mockYoutubeExtraction.extractAudio.mockResolvedValue(undefined);
     mockAudioExtraction.downloadAudio.mockResolvedValue(undefined);
+    mockTranscription.transcribeText.mockResolvedValue("Mock transcript text.");
     mockTranscription.transcribe.mockResolvedValue("Mock transcript text.");
     mockSummarization.summarize.mockResolvedValue("<p>Mock summary.</p>");
 
