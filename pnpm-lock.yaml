@@ -30,11 +30,11 @@ importers:
         specifier: ^1.13.0
         version: 1.19.14(hono@4.12.25)
       better-sqlite3:
-        specifier: 12.10.0
-        version: 12.10.0
+        specifier: 12.10.1
+        version: 12.10.1
       drizzle-orm:
         specifier: ^0.45.2
-        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@12.10.0)
+        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@12.10.1)
       hono:
         specifier: ^4.12.25
         version: 4.12.25
@@ -134,7 +134,7 @@ importers:
         specifier: ^2.0.4
         version: 2.0.4(hono@4.12.25)
       better-sqlite3:
-        specifier: ^12.10.1
+        specifier: 12.10.1
         version: 12.10.1
       dotenv:
         specifier: ^17.4.2
@@ -1085,10 +1085,6 @@ packages:
     resolution: {integrity: sha512-honAfLBde0HAFLdNyBEfuuENkF6zR+ozxqxa/2zJKHBe1qzLqyTSeRKpdPEHAP03rlDGyQOPnCSxnVpVqQo9Mg==}
     engines: {node: '>=6.0.0'}
     hasBin: true
-
-  better-sqlite3@12.10.0:
-    resolution: {integrity: sha512-CyzaZRQKyHkB2ZInfTTl2nvT33EbDpjkLEbE8/Zck3Ll6O0qqvuGdrJ45HgtH+HykRg88ITY3AdreBGN70aBSQ==}
-    engines: {node: 20.x || 22.x || 23.x || 24.x || 25.x || 26.x}
 
   better-sqlite3@12.10.1:
     resolution: {integrity: sha512-HfFtzCqnSfwB3+HroF6PSKzyh+7RfNMGPCzHFUZXRlvrPCb4P3cvxKZNN43Sr7IrkofqQZM+gIvffGpA8VvqgA==}
@@ -2928,11 +2924,6 @@ snapshots:
 
   baseline-browser-mapping@2.10.35: {}
 
-  better-sqlite3@12.10.0:
-    dependencies:
-      bindings: 1.5.0
-      prebuild-install: 7.1.3
-
   better-sqlite3@12.10.1:
     dependencies:
       bindings: 1.5.0
@@ -3019,11 +3010,6 @@ snapshots:
       '@esbuild-kit/esm-loader': 2.6.5
       esbuild: 0.28.1
       tsx: 4.22.4
-
-  drizzle-orm@0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@12.10.0):
-    optionalDependencies:
-      '@types/better-sqlite3': 7.6.13
-      better-sqlite3: 12.10.0
 
   drizzle-orm@0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@12.10.1):
     optionalDependencies:

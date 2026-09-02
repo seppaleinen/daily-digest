@@ -1,5 +1,5 @@
 # --- STAGE 1: Base (Build Essentials) ---
-FROM node:20-alpine AS base
+FROM node:26-alpine AS base
 RUN apk add --no-cache python3 make g++ && corepack enable
 WORKDIR /app
 
@@ -26,7 +26,7 @@ COPY packages/shared/src ./packages/shared/src
 RUN pnpm install --prod --frozen-lockfile --config.node-linker=hoisted
 
 # --- STAGE 5: Runner ---
-FROM node:20-alpine AS runner
+FROM node:26-alpine AS runner
 WORKDIR /app
 COPY --from=prod-deps /app/package.json ./
 COPY --from=prod-deps /app/node_modules ./node_modules

@@ -21,7 +21,7 @@
     "db:push": "pnpm --filter \"@daily-digest/*\" db:push"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=26"
   },
   "devDependencies": {
     "turbo": "^2.4.0",

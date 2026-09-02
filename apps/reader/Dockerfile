@@ -1,5 +1,5 @@
 # --- STAGE 1: Build ---
-FROM node:20-alpine AS build
+FROM node:26-alpine AS build
 RUN corepack enable
 WORKDIR /app
 COPY pnpm-lock.yaml package.json pnpm-workspace.yaml ./
