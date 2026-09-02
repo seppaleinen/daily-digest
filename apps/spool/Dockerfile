@@ -1,8 +1,9 @@
 # --- STAGE 1: Base (Build Essentials) ---
 FROM node:26-alpine AS base
-RUN apk add --no-cache python3 make g++ && corepack enable
-WORKDIR /app
+RUN apk add --no-cache python3 make g++ \
+    && npm install -g pnpm@9
 
+WORKDIR /app
 # --- STAGE 2: Dependencies ---
 FROM base AS deps
 COPY pnpm-lock.yaml package.json pnpm-workspace.yaml ./
@@ -18,7 +19,6 @@ RUN pnpm --filter @daily-digest/spool build
 
 # --- STAGE 4: Production Dependencies ---
 FROM base AS prod-deps
-RUN corepack enable
 COPY pnpm-lock.yaml package.json pnpm-workspace.yaml ./
 COPY apps/spool/package.json ./apps/spool/
 COPY packages/shared/package.json ./packages/shared/

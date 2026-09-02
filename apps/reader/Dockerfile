@@ -1,6 +1,6 @@
 # --- STAGE 1: Build ---
 FROM node:26-alpine AS build
-RUN corepack enable
+RUN npm install -g pnpm@9
 WORKDIR /app
 COPY pnpm-lock.yaml package.json pnpm-workspace.yaml ./
 COPY apps/reader/package.json ./apps/reader/
